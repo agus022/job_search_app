@@ -104,14 +104,14 @@ class OficialProfile {
   final String description;
   final String location;
   final String certifications;
-  final List<String> jobIds;
+  final List<String> jobsIds;
   final List<String> jobNames;
 
   OficialProfile({
     required this.description,
     required this.location,
     required this.certifications,
-    required this.jobIds,
+    required this.jobsIds,
     required this.jobNames,
   });
 
@@ -120,8 +120,8 @@ class OficialProfile {
       description: map['description'] as String,
       location: map['location'] as String,
       certifications: map['certifications'] as String,
-      jobIds: map['jobIds'] != null
-          ? List<String>.from(map['jobIds'] as List<dynamic>)
+      jobsIds: map['jobsIds'] != null
+          ? List<String>.from(map['jobsIds'] as List<dynamic>)
           : <String>[],
       jobNames: map['jobNames'] != null
           ? List<String>.from(map['jobNames'] as List<dynamic>)
@@ -134,7 +134,7 @@ class OficialProfile {
       'description': description,
       'location': location,
       'certifications': certifications,
-      'jobIds': jobIds,
+      'jobsIds': jobsIds,
       'jobNames': jobNames,
     };
   }

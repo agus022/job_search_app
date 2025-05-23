@@ -100,7 +100,7 @@ class UserCubit extends Cubit<UserState> {
     required String description,
     required String textualLocation,
     required String certifications,
-    required List<String> jobIds,
+    required List<String> jobsIds,
     required List<String> jobNames,
     required double latitude,
     required double longitude,
@@ -117,14 +117,14 @@ class UserCubit extends Cubit<UserState> {
         'description': description,
         'location': textualLocation,
         'certifications': certifications,
-        'jobIds': jobIds,
+        'jobsIds': jobsIds,
         'jobNames': jobNames,
       };
 
       await _firestore.collection(usersCollection).doc(uid).update({
         'clientProfile': FieldValue.delete(),
         'oficialProfile': oficialProfileMap,
-        'jobIds': jobIds,
+        'jobsIds': jobsIds,
         'jobNames': jobNames,
         'location': GeoPoint(latitude, longitude),
       });
@@ -148,9 +148,9 @@ class UserCubit extends Cubit<UserState> {
           .collection('jobs')
           .where('categoryId', isEqualTo: categoryId)
           .get();
-      final jobIds = jobSnap.docs.map((d) => d.id).toList();
+      final jobsIds = jobSnap.docs.map((d) => d.id).toList();
 
-      if (jobIds.isEmpty) {
+      if (jobsIds.isEmpty) {
         emit(UserSuccess(
             users: [], message: 'No hay oficiales en esta categoría'));
         return [];
@@ -158,9 +158,9 @@ class UserCubit extends Cubit<UserState> {
 
       // Firestore limita arrayContainsAny a máximo 10 valores por consulta
       final batches = <List<String>>[];
-      for (var i = 0; i < jobIds.length; i += 10) {
-        batches.add(
-            jobIds.sublist(i, i + 10 > jobIds.length ? jobIds.length : i + 10));
+      for (var i = 0; i < jobsIds.length; i += 10) {
+        batches.add(jobsIds.sublist(
+            i, i + 10 > jobsIds.length ? jobsIds.length : i + 10));
       }
 
       final List<UserEntity> result = [];
@@ -168,7 +168,7 @@ class UserCubit extends Cubit<UserState> {
         final userSnap = await _firestore
             .collection('users')
             .where('type', isEqualTo: UserType.oficial.name)
-            .where('oficialProfile.jobIds', arrayContainsAny: batch)
+            .where('oficialProfile.jobsIds', arrayContainsAny: batch)
             .get();
         for (final doc in userSnap.docs) {
           result.add(UserEntity.fromMap(doc.data(), doc.id));

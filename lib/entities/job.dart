@@ -1,3 +1,17 @@
+class Category {
+  final String id;
+  final String name;
+
+  Category({required this.id, required this.name});
+
+  factory Category.fromMap(Map<String, dynamic> map, String docId) {
+    return Category(
+      id: docId,
+      name: map['name'] as String,
+    );
+  }
+}
+
 class Job {
   final String id;
   final String name;
