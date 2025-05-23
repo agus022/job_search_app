@@ -1,8 +1,8 @@
-import 'dart:math';
 import 'package:bloc/bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:job_search_oficial/domain/entities/entities.dart';
+import 'package:job_search_oficial/entities/entities.dart';
+import 'package:job_search_oficial/helpers/location.dart';
 
 abstract class UserState {}
 
@@ -141,74 +141,52 @@ class UserCubit extends Cubit<UserState> {
   }
 
   /// Get Users Oficial by **categoría de oficio**.
-  Future<void> getOfficialsByCategory(String categoryId) async {
+  Future<List<UserEntity>> getOfficialsByCategory(String categoryId) async {
     emit(UserLoading());
     try {
-      // Get Jobs of categoryId
-      QuerySnapshot jobSnap = await _firestore
+      final jobSnap = await _firestore
           .collection('jobs')
           .where('categoryId', isEqualTo: categoryId)
           .get();
+      final jobIds = jobSnap.docs.map((d) => d.id).toList();
 
-      List<String> jobIds = jobSnap.docs.map((doc) => doc.id).toList();
       if (jobIds.isEmpty) {
-        emit(UserSuccess(users: []));
-        return;
+        emit(UserSuccess(
+            users: [], message: 'No hay oficiales en esta categoría'));
+        return [];
       }
-      // 2. Obtener relaciones donde jobId esté en la lista de oficios obtenida
-      // Firestore whereIn permite hasta 10 elementos; si hay más, se hacen consultas en lote.
-      List<String> jobIdsBatch =
-          jobIds.length > 10 ? jobIds.sublist(0, 10) : jobIds;
-      QuerySnapshot relSnap = await _firestore
-          .collection('official_jobs')
-          .where('jobId', whereIn: jobIdsBatch)
-          .get();
-      // Si hay más de 10 oficios, procesar en lotes adicionales:
-      if (jobIds.length > 10) {
-        for (int i = 10; i < jobIds.length; i += 10) {
-          var subList = jobIds.sublist(
-              i, i + 10 > jobIds.length ? jobIds.length : i + 10);
-          QuerySnapshot extraRelSnap = await _firestore
-              .collection('official_jobs')
-              .where('jobId', whereIn: subList)
-              .get();
-          relSnap.docs.addAll(extraRelSnap.docs);
-        }
+
+      // Firestore limita arrayContainsAny a máximo 10 valores por consulta
+      final batches = <List<String>>[];
+      for (var i = 0; i < jobIds.length; i += 10) {
+        batches.add(
+            jobIds.sublist(i, i + 10 > jobIds.length ? jobIds.length : i + 10));
       }
-      // Extraer IDs únicos de oficiales de las relaciones encontradas
-      Set<String> officialIds = relSnap.docs
-          .map((doc) =>
-              (doc.data() as Map<String, dynamic>)['officialId'] as String)
-          .toSet();
-      if (officialIds.isEmpty) {
-        emit(UserSuccess(users: []));
-        return;
-      }
-      // 3. Consultar los documentos de usuario correspondientes a esos officialIds
-      List<UserEntity> officials = [];
-      List<String> idsList = officialIds.toList();
-      // Firestore whereIn en FieldPath.documentId para obtener documentos por ID (máx 10 por consulta)
-      for (int i = 0; i < idsList.length; i += 10) {
-        var batch = idsList.sublist(
-            i, i + 10 > idsList.length ? idsList.length : i + 10);
-        QuerySnapshot userSnap = await _firestore
-            .collection(usersCollection)
-            .where(FieldPath.documentId, whereIn: batch)
-            .where('type', isEqualTo: 'official')
+
+      final List<UserEntity> result = [];
+      for (final batch in batches) {
+        final userSnap = await _firestore
+            .collection('users')
+            .where('type', isEqualTo: UserType.oficial.name)
+            .where('oficialProfile.jobIds', arrayContainsAny: batch)
             .get();
-        for (var doc in userSnap.docs) {
-          officials.add(
-              UserEntity.fromMap(doc.data() as Map<String, dynamic>, doc.id));
+        for (final doc in userSnap.docs) {
+          result.add(UserEntity.fromMap(doc.data(), doc.id));
         }
       }
-      emit(UserSuccess(users: officials));
+
+      emit(UserSuccess(users: result));
+      return result;
+    } on FirebaseException catch (e) {
+      emit(UserError(e.message ?? 'Error al cargar oficiales'));
+      return [];
     } catch (e) {
       emit(UserError(e.toString()));
+      return [];
     }
   }
 
   /// Consulta los **5 oficiales más cercanos** a una ubicación dada (lat, lon).
-  /// (Para simplificar, filtra dentro de un radio fijo y calcula distancias en el cliente)
   Future<void> getOfficialsByLocation(double latitude, double longitude,
       {double radiusKm = 50.0}) async {
     emit(UserLoading());
@@ -216,7 +194,7 @@ class UserCubit extends Cubit<UserState> {
       // Obtener todos los usuarios de tipo "official" (en una app real, usar un enfoque geoespacial más eficiente)
       QuerySnapshot snap = await _firestore
           .collection(usersCollection)
-          .where('type', isEqualTo: 'official')
+          .where('type', isEqualTo: UserType.oficial.name)
           .get();
       List<UserEntity> allOfficials = snap.docs
           .map((doc) =>
@@ -230,8 +208,9 @@ class UserCubit extends Cubit<UserState> {
       List<MapEntry<UserEntity, double>> distances = [];
       for (var off in allOfficials) {
         if (off.location == null) continue;
-        double d = _distanceKm(latitude, longitude, off.location!.latitude,
-            off.location!.longitude);
+
+        double d = LocationHelpers().distanceKm(latitude, longitude,
+            off.location!.latitude, off.location!.longitude);
         if (d <= radiusKm) {
           distances.add(MapEntry(off, d));
         }
@@ -244,45 +223,5 @@ class UserCubit extends Cubit<UserState> {
     } catch (e) {
       emit(UserError(e.toString()));
     }
-  }
-
-  /// Consulta oficiales filtrando por tipo de plan de suscripción ("free" o "plus").
-  Future<void> getOfficialsByPlan(String planType) async {
-    emit(UserLoading());
-    try {
-      QuerySnapshot snap = await _firestore
-          .collection(usersCollection)
-          .where('type', isEqualTo: 'official')
-          .where('plan', isEqualTo: planType)
-          .get();
-      List<UserEntity> officials = snap.docs
-          .map((doc) =>
-              UserEntity.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-          .toList();
-      emit(UserSuccess(users: officials));
-    } catch (e) {
-      emit(UserError(e.toString()));
-    }
-  }
-
-  //=== Métodos auxiliares privados ===
-
-  /// Calcula la distancia entre dos coordenadas (lat1, lon1) y (lat2, lon2) en kilómetros.
-  double _distanceKm(double lat1, double lon1, double lat2, double lon2) {
-    const double R = 6371.0; // Radio de la Tierra en km
-    double dLat = _deg2rad(lat2 - lat1);
-    double dLon = _deg2rad(lon2 - lon1);
-    double a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_deg2rad(lat1)) *
-            cos(_deg2rad(lat2)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
-    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return R * c;
-  }
-
-  /// Convierte grados a radianes.
-  double _deg2rad(double deg) {
-    return deg * pi / 180.0;
   }
 }

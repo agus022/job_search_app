@@ -1,9 +1,10 @@
-import 'package:job_search_oficial/domain/entities/calification.dart';
+import 'package:job_search_oficial/entities/calification.dart';
 
 enum ServiceState { pendent, accepted, inProgress, completed, cancelled }
 
 enum PaymentMethod { cash, creditCard, debitCcard }
 
+// Crear mapper
 class Service {
   final String? id;
   final String clientRef;

@@ -1,6 +1,5 @@
 enum Punctuation { one, two, three, four, five }
 
-// TODO: Crear métodos postear comentario, borrar comentario, editar comentario, obtener comentarios de un servicio
 class Calification {
   final String? id;
   final String serviceRef;
