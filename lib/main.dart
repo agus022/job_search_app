@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:job_search_oficial/firebase_options.dart';
 import 'package:job_search_oficial/screens/home_screen.dart';
 import 'package:job_search_oficial/screens/login_screen.dart';
 import 'package:job_search_oficial/screens/register_screen.dart';
 
-void main() {
+void main() async {
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MainApp());
 }
 

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "933821328299",
+    "project_id": "oficiales-c07ad",
+    "storage_bucket": "oficiales-c07ad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:933821328299:android:b6124995b8e7531d7800ee",
+        "android_client_info": {
+          "package_name": "com.example.job_search_oficial"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_jr33-h9_oit7N1O5dnO39AngsZXSLBw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
