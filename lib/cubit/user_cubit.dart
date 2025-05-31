@@ -11,6 +11,7 @@ class UserState extends Equatable {
   final List<UserEntity>? users;
   final String? message;
   final String? error;
+  final bool logged;
 
   const UserState({
     this.loading = false,
@@ -18,6 +19,7 @@ class UserState extends Equatable {
     this.users,
     this.message,
     this.error,
+    this.logged = false,
   });
 
   UserState copyWith({
@@ -26,18 +28,19 @@ class UserState extends Equatable {
     List<UserEntity>? users,
     String? message,
     String? error,
+    bool? logged,
   }) {
     return UserState(
-      loading: loading ?? this.loading,
-      user: user ?? this.user,
-      users: users ?? this.users,
-      message: message,
-      error: error,
-    );
+        loading: loading ?? this.loading,
+        user: user ?? this.user,
+        users: users ?? this.users,
+        message: message,
+        error: error,
+        logged: logged ?? this.logged);
   }
 
   @override
-  List<Object?> get props => [loading, user, users, message, error];
+  List<Object?> get props => [loading, user, users, message, error, logged];
 }
 
 class UserCubit extends Cubit<UserState> {
@@ -66,6 +69,7 @@ class UserCubit extends Cubit<UserState> {
 
       emit(state.copyWith(
         loading: false,
+        logged: true,
         user: user,
         message: "Login exitoso",
       ));
