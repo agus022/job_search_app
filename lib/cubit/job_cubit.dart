@@ -3,14 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 import 'package:job_search_oficial/entities/entities.dart';
 
-class JobCategoryState extends Equatable {
+class JobState extends Equatable {
   final bool loading;
   final List<Category>? categories;
   final List<Job>? jobs;
   final String? message;
   final String? error;
 
-  const JobCategoryState({
+  const JobState({
     this.loading = false,
     this.categories,
     this.jobs,
@@ -18,14 +18,14 @@ class JobCategoryState extends Equatable {
     this.error,
   });
 
-  JobCategoryState copyWith({
+  JobState copyWith({
     bool? loading,
     List<Category>? categories,
     List<Job>? jobs,
     String? message,
     String? error,
   }) {
-    return JobCategoryState(
+    return JobState(
       loading: loading ?? this.loading,
       categories: categories ?? this.categories,
       jobs: jobs ?? this.jobs,
@@ -38,30 +38,35 @@ class JobCategoryState extends Equatable {
   List<Object?> get props => [loading, categories, jobs, message, error];
 }
 
-class JobCategoryCubit extends Cubit<JobCategoryState> {
+class JobCubit extends Cubit<JobState> {
   final String collectionCategory = 'categories';
   final String collectionJobs = 'jobs';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  JobCategoryCubit() : super(const JobCategoryState());
+  JobCubit() : super(const JobState());
 
-  /// Obtiene todas las categorías
-  Future<void> getCategories() async {
+  // Obtener todos los Jobs
+  Future<List<Job>> getJobs() async {
     emit(state.copyWith(loading: true, error: null, message: null));
     try {
-      final snap = await _firestore.collection(collectionCategory).get();
-      final cats =
-          snap.docs.map((d) => Category.fromMap(d.data(), d.id)).toList();
+      final snap = await _firestore.collection(collectionJobs).get();
+
+      final jobs = snap.docs
+          .map((job) => Job.fromMap(job.data(), docId: job.id))
+          .toList();
+
       emit(state.copyWith(
         loading: false,
-        categories: cats,
-        message: 'Categorías cargadas',
+        jobs: jobs,
+        message: 'Trabajos cargados',
       ));
+      return jobs;
     } catch (e) {
       emit(state.copyWith(
         loading: false,
-        error: 'Error cargando categorías: $e',
+        error: 'Error cargando trabajos: $e',
       ));
+      return [];
     }
   }
 
@@ -106,6 +111,34 @@ class JobCategoryCubit extends Cubit<JobCategoryState> {
         loading: false,
         error: 'Error cargando trabajos: $e',
       ));
+    }
+  }
+
+  // Get users by a Job
+  Future<List<UserEntity>> getUsersByJob(String jobRef) async {
+    emit(state.copyWith(loading: true, error: null, message: null));
+    try {
+      // Filtrar por usuarios de tipo "oficial" cuyo arreglo oficialProfile.jobsIds contenga jobRef
+      final snap = await _firestore
+          .collection('users')
+          .where('type', isEqualTo: UserType.oficial.name)
+          .where('oficialProfile.jobsIds', arrayContains: jobRef)
+          .get();
+
+      final result =
+          snap.docs.map((d) => UserEntity.fromMap(d.data(), d.id)).toList();
+
+      emit(state.copyWith(
+        loading: false,
+        message: 'Usuarios oficiales cargados',
+      ));
+      return result;
+    } catch (e) {
+      emit(state.copyWith(
+        loading: false,
+        error: 'Error cargando usuarios por job: $e',
+      ));
+      return [];
     }
   }
 }
