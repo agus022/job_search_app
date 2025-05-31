@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum ServiceState { pendent, accepted, inProgress, completed, cancelled }
+enum ServiceStatus { pendent, accepted, completed, cancelled }
 
 enum PaymentMethod { cash, creditCard, debitCard }
 
@@ -11,7 +11,7 @@ class Service {
   final DateTime date;
   final String address;
   final String description;
-  final ServiceState state;
+  final ServiceStatus state;
   final double price;
   final List<PaymentMethod> paymentMethods;
 
@@ -45,9 +45,9 @@ class Service {
       date: (map['date'] as Timestamp).toDate(),
       address: map['address'] as String,
       description: map['description'] as String,
-      state: ServiceState.values.firstWhere(
+      state: ServiceStatus.values.firstWhere(
         (s) => s.name == map['state'] as String,
-        orElse: () => ServiceState.pendent,
+        orElse: () => ServiceStatus.pendent,
       ),
       price: (map['price'] as num).toDouble(),
       paymentMethods: parsedPayments,
