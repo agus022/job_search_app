@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:job_search_oficial/entities/entities.dart';
 
 enum UserType { client, oficial }
 
@@ -106,6 +107,7 @@ class OficialProfile {
   final String certifications;
   final List<String> jobsIds;
   final List<String> jobNames;
+  final List<Calification>? califications;
 
   OficialProfile({
     required this.description,
@@ -113,9 +115,18 @@ class OficialProfile {
     required this.certifications,
     required this.jobsIds,
     required this.jobNames,
+    this.califications,
   });
 
   factory OficialProfile.fromMap(Map<String, dynamic> map) {
+    // Parsear calificaciones si existen
+    List<Calification>? parsedCalifications;
+    if (map['califications'] != null) {
+      parsedCalifications = (map['califications'] as List<dynamic>)
+          .map((e) => Calification.fromMap(e as Map<String, dynamic>))
+          .toList();
+    }
+
     return OficialProfile(
       description: map['description'] as String,
       location: map['location'] as String,
@@ -126,6 +137,7 @@ class OficialProfile {
       jobNames: map['jobNames'] != null
           ? List<String>.from(map['jobNames'] as List<dynamic>)
           : <String>[],
+      califications: parsedCalifications,
     );
   }
 
@@ -136,6 +148,9 @@ class OficialProfile {
       'certifications': certifications,
       'jobsIds': jobsIds,
       'jobNames': jobNames,
+      // Si califications es null, omitimos el campo; si no, convertimos cada Calification a Map
+      if (califications != null)
+        'califications': califications!.map((c) => c.toMap()).toList(),
     };
   }
 }

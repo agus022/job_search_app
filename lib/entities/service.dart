@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:job_search_oficial/entities/entities.dart';
 
 enum ServiceState { pendent, accepted, inProgress, completed, cancelled }
 
@@ -15,7 +14,6 @@ class Service {
   final ServiceState state;
   final double price;
   final List<PaymentMethod> paymentMethods;
-  final List<Calification>? califications;
 
   Service({
     this.id,
@@ -27,7 +25,6 @@ class Service {
     required this.state,
     required this.price,
     required this.paymentMethods,
-    this.califications,
   });
 
   factory Service.fromMap(Map<String, dynamic> map, {String? docId}) {
@@ -38,13 +35,6 @@ class Service {
                 (pm) => pm.name == e as String,
                 orElse: () => PaymentMethod.cash,
               ))
-          .toList();
-    }
-
-    List<Calification>? parsedCalifications;
-    if (map['califications'] != null) {
-      parsedCalifications = (map['califications'] as List<dynamic>)
-          .map((e) => Calification.fromMap(e as Map<String, dynamic>))
           .toList();
     }
 
@@ -61,7 +51,6 @@ class Service {
       ),
       price: (map['price'] as num).toDouble(),
       paymentMethods: parsedPayments,
-      califications: parsedCalifications,
     );
   }
 
@@ -76,8 +65,6 @@ class Service {
       'state': state.name,
       'price': price,
       'paymentMethods': paymentMethods.map((pm) => pm.name).toList(),
-      if (califications != null)
-        'califications': califications!.map((c) => c.toMap()).toList(),
     };
   }
 }
