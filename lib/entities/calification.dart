@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum Punctuation { one, two, three, four, five }
+enum Punctuation { zero, one, two, three, four, five }
 
 class Calification {
   final String? id;
-  final String serviceRef;
+  // final String serviceRef;
   final String clientRef;
   final Punctuation punctuation;
   final String comment;
@@ -12,7 +12,7 @@ class Calification {
 
   Calification({
     this.id,
-    required this.serviceRef,
+    // required this.serviceRef,
     required this.clientRef,
     required this.punctuation,
     required this.comment,
@@ -23,11 +23,11 @@ class Calification {
   factory Calification.fromMap(Map<String, dynamic> map, {String? docId}) {
     return Calification(
       id: docId ?? map['id'] as String?,
-      serviceRef: map['serviceRef'] as String,
+      // serviceRef: map['serviceRef'] as String,
       clientRef: map['clientRef'] as String,
       punctuation: Punctuation.values.firstWhere(
         (e) => e.name == (map['punctuation'] as String),
-        orElse: () => Punctuation.one,
+        orElse: () => Punctuation.zero,
       ),
       comment: map['comment'] as String,
       date: (map['date'] as Timestamp).toDate(),

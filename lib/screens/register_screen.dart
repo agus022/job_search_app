@@ -117,8 +117,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         profilePicture: '',
                         address: 'La Cantera');
 
-                    userCubit.state.loading ??
-                        const CircularProgressIndicator();
+                    print('Error: ${userCubit.state.error}');
+                    print('Message: ${userCubit.state.message}');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
