@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:job_search_oficial/cubit/cubits.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final userCubit = context.read<UserCubit>();
+    print('ID DEL USUARIO ${userCubit.state.user?.id}');
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       drawer: _buildDrawer(context),

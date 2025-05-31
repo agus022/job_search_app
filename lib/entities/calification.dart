@@ -12,7 +12,6 @@ class Calification {
 
   Calification({
     this.id,
-    // required this.serviceRef,
     required this.clientRef,
     required this.punctuation,
     required this.comment,
@@ -38,7 +37,6 @@ class Calification {
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
-      'serviceRef': serviceRef,
       'clientRef': clientRef,
       'punctuation': punctuation.name,
       'comment': comment,
