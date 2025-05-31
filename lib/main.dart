@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:job_search_oficial/cubit/cubits.dart';
 import 'package:job_search_oficial/firebase_options.dart';
 import 'package:job_search_oficial/screens/home_screen.dart';
 import 'package:job_search_oficial/screens/login_screen.dart';
@@ -17,14 +19,18 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
-      routes: {
-        '/': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-        '/home': (context) => const HomeScreen(),
-      },
+    return BlocProvider(
+      create: (_) => UserCubit(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Flutter Demo',
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const LoginScreen(),
+          '/register': (context) => const RegisterScreen(),
+          '/home': (context) => const HomeScreen(),
+        },
+      ),
     );
   }
 }

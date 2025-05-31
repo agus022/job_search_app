@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../cubit/cubits.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -15,6 +17,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userCubit = context.read<UserCubit>();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       body: SafeArea(
@@ -104,7 +108,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Lógica futura de registro
+                    userCubit.registerClient(
+                        name: 'Alfredo',
+                        lastName: 'Jiménez',
+                        email: '21030761@itcelaya.edu.mx',
+                        password: 'panquecito',
+                        phone: '4612300124',
+                        profilePicture: '',
+                        address: 'La Cantera');
+
+                    userCubit.state.loading ??
+                        const CircularProgressIndicator();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
