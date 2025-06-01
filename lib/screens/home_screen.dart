@@ -1,7 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:job_search_oficial/cubit/category_cubit.dart';
 import 'package:job_search_oficial/cubit/cubits.dart';
+import 'package:job_search_oficial/widgets/custom_navabar.dart';
+
+class Oficial {
+  final String name;
+  final String description;
+  final String image;
+  final String followers;
+  final String projects;
+  Oficial(
+      {required this.name,
+      required this.description,
+      required this.image,
+      required this.followers,
+      required this.projects});
+}
+
+final List<Oficial> oficiales = [
+  Oficial(
+      name: "Sophie Bennett",
+      description: "Product Designer who focuses on simplicity & usability.",
+      image: "assets/img/user.webp",
+      followers: "312",
+      projects: "48"),
+  Oficial(
+      name: "Oficial Don",
+      description: "Electricista con experiencia y recomendaciones.",
+      image: "assets/img/user.webp",
+      followers: "2.6K",
+      projects: "34"),
+  Oficial(
+      name: "Oficial Juan",
+      description: "Plomero certificado para trabajos residenciales.",
+      image: "assets/img/user.webp",
+      followers: "506",
+      projects: "12"),
+];
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,6 +48,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final PageController _pageController = PageController(viewportFraction: 0.8);
+
   @override
   void initState() {
     context.read<CategoryCubit>().getCategories();
@@ -19,307 +59,339 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userCubit = context.read<UserCubit>();
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      key: _scaffoldKey,
+      backgroundColor: const Color(0xFFF9FAFB),
       drawer: _buildDrawer(context),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.chat_bubble_outline), label: ''),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.miscellaneous_services), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: ''),
-        ],
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.only(bottom: 5, left: 24, right: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 255, 255, 255),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(44),
+              topRight: Radius.circular(44),
+            ),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(44),
+              color: Color(0xff292526),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color.fromARGB(197, 255, 255, 255),
+                  blurRadius: 10,
+                  spreadRadius: 3,
+                  offset: Offset(0, 0),
+                ),
+              ],
+            ),
+            padding: EdgeInsets.only(top: 10, bottom: 10, left: 16, right: 16),
+            child: CustomNavBar(),
+          ),
+        ),
       ),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             backgroundColor: Colors.white,
-            pinned: true,
+            pinned: false,
             floating: true,
-            snap: true,
-            expandedHeight: 140,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                padding: const EdgeInsets.only(top: 60, left: 16, right: 16),
-                alignment: Alignment.bottomLeft,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: const [
-                    Text(
-                      "Welcome back!",
-                      style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      "Find the best worker for your task",
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            title:
-                const Text("Community", style: TextStyle(color: Colors.black)),
-            centerTitle: true,
-            leading: Builder(
-              builder: (context) => IconButton(
-                icon: const Icon(Icons.menu, color: Colors.black),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.notifications_none, color: Colors.black),
-                onPressed: () {},
-              )
-            ],
-          ),
+            automaticallyImplyLeading: false,
+            expandedHeight: 166,
+            flexibleSpace: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double percent =
+                    ((constraints.maxHeight - kToolbarHeight) /
+                            (140 - kToolbarHeight))
+                        .clamp(0.0, 1.0);
 
-          // TODO: Mnaejar el caso de Overflow width
-          SliverToBoxAdapter(
-            child: BlocBuilder<CategoryCubit, CategoryState>(
-                builder: (context, state) {
-              if (state.loading) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
+                // Cuando scroll hacia abajo (colapsado), ocultamos todo
+                if (percent == 0) return const SizedBox.shrink();
 
-              if (state.error != null) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: Text(state.error!)),
-                );
-              }
-
-              final cats = state.categories ?? [];
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: cats.map((category) {
-                    return _filterButton(category.name);
-                  }).toList(),
-                ),
-              );
-            }),
-          ),
-
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search..',
-                        prefixIcon: const Icon(Icons.search),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
+                return FlexibleSpaceBar(
+                  background: Opacity(
+                    opacity: percent,
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        top: 60.0,
+                        left: 16,
+                        right: 16,
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.tune),
-                  )
-                ],
-              ),
-            ),
-          ),
-
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            "Get in the team Spirit",
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                        children: [
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () =>
+                                    _scaffoldKey.currentState?.openDrawer(),
+                                child: const CircleAvatar(
+                                  radius: 24,
+                                  backgroundImage:
+                                      AssetImage('assets/img/user.webp'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextField(
+                                  decoration: InputDecoration(
+                                    hintText: 'Search...',
+                                    filled: true,
+                                    fillColor: Colors.grey[200],
+                                    prefixIcon: const Icon(Icons.search),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 4),
-                          Text("Create or join a team to stay motivated!"),
                         ],
                       ),
                     ),
-                    const Icon(Icons.directions_run,
-                        size: 48, color: Colors.green),
-                  ],
+                  ),
+                );
+              },
+            ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(66),
+              child: Container(
+                color: Colors.white,
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 16, right: 8, bottom: 6),
+                height: 56,
+                child: BlocBuilder<CategoryCubit, CategoryState>(
+                  builder: (context, state) {
+                    if (state.loading) {
+                      return const SizedBox(
+                          height: 24, child: CircularProgressIndicator());
+                    }
+                    if (state.error != null) {
+                      return Text(state.error!);
+                    }
+                    final cats = state.categories ?? [];
+                    return ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: cats.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(cats[index].name,
+                            style: const TextStyle(color: Colors.black)),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
           ),
-
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text("Trending Teams",
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text("See All", style: TextStyle(color: Colors.grey)),
-                ],
+              padding: const EdgeInsets.symmetric(vertical: 20.0),
+              child: SizedBox(
+                height: 390,
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: oficiales.length,
+                  itemBuilder: (context, index) {
+                    return AnimatedBuilder(
+                      animation: _pageController,
+                      builder: (context, child) {
+                        double value = 1.0;
+                        if (_pageController.position.haveDimensions) {
+                          value = (_pageController.page! - index).abs();
+                          value = (1 - (value * 0.2)).clamp(0.9, 1.0);
+                        }
+                        return Transform.scale(
+                          scale: value,
+                          child: child,
+                        );
+                      },
+                      child: _buildCard(context, oficiales[index]),
+                    );
+                  },
+                ),
               ),
             ),
           ),
-
-          SliverList(
-            delegate: SliverChildListDelegate(
-              [
-                _teamCard("Oficial Don", "4.9K", "8"),
-                _teamCard("Oficial Don", "2.6K", "7"),
-                _teamCard("Oficial Don", "506", "5"),
-              ],
-            ),
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context, Oficial oficial) {
+    return LayoutBuilder(
+      builder: (context, constraints) => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset(
+                  oficial.image,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                          child: Text(oficial.name,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16))),
+                      const Icon(Icons.verified, color: Colors.green, size: 20),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(oficial.description,
+                      style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Icon(Icons.groups,
+                                size: 16, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Text(
+                              oficial.followers,
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
+                            ),
+                            const SizedBox(width: 16),
+                            const Icon(Icons.folder_copy,
+                                size: 16, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Text(
+                              oficial.projects,
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/job_detail');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFFFFD55),
+                            foregroundColor: Colors.black,
+                            shape: const CircleBorder(),
+                            padding: EdgeInsets.zero,
+                            elevation: 0,
+                          ),
+                          child: SvgPicture.asset(
+                            'assets/svg/arrow-top-right.svg',
+                            width: 24,
+                            height: 24,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
 
   Drawer _buildDrawer(BuildContext context) {
     return Drawer(
-      backgroundColor: Colors.black,
-      child: ListView(
-        padding: EdgeInsets.zero,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(40),
+          bottomRight: Radius.circular(40),
+        ),
+      ),
+      child: Column(
         children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: Colors.black),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const CircleAvatar(radius: 36, backgroundColor: Colors.grey),
-                const SizedBox(height: 8),
-                const Text("user/Username",
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text("Estado en línea: Ocultar",
-                      style: TextStyle(color: Colors.white70, fontSize: 12)),
-                )
-              ],
+          UserAccountsDrawerHeader(
+            decoration: const BoxDecoration(
+              color: Color.fromARGB(255, 51, 51, 49), // verde profesional
+            ),
+            currentAccountPicture: const CircleAvatar(
+              backgroundImage:
+                  AssetImage('assets/img/user.webp'), // Reemplaza con tu imagen
+            ),
+            accountName: Text(
+              'Cristian Quintana',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            accountEmail: Text(
+              'cristian@email.com',
+              style: TextStyle(fontSize: 14),
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.person_outline, color: Colors.white),
-            title: const Text("Perfil", style: TextStyle(color: Colors.white)),
-            onTap: () {},
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings, color: Colors.white),
-            title: const Text("Ajustes", style: TextStyle(color: Colors.white)),
+            leading: const Icon(Icons.person_outline, color: Colors.black87),
+            title: const Text('Perfil'),
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const AccountSettingsScreen(),
-                ),
-              );
+              Navigator.pushNamed(context, '/profile_detail');
             },
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterButton(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: true ? Colors.green : Colors.grey[300],
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(label,
-          style: TextStyle(color: true ? Colors.white : Colors.black)),
-    );
-  }
-
-  Widget _teamCard(String name, String users, String trophies) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            const CircleAvatar(
-                radius: 24,
-                backgroundImage: AssetImage('assets/avatar_placeholder.png')),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Row(
-                    children: [
-                      const Icon(Icons.groups, size: 16),
-                      Text(" $users "),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.emoji_events_outlined, size: 16),
-                      Text(" $trophies "),
-                    ],
-                  )
-                ],
-              ),
+          ListTile(
+            leading:
+                const Icon(Icons.group_add_outlined, color: Colors.black87),
+            title: const Text('Convertirse en socio'),
+            onTap: () {
+              Navigator.pushNamed(context, '/partner');
+            },
+          ),
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Divider(thickness: 1),
+          ),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.redAccent),
+            title: const Text(
+              'Cerrar sesión',
+              style: TextStyle(color: Colors.redAccent),
             ),
-            TextButton(
-              onPressed: () {},
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: const Text("Join"),
-            )
-          ],
-        ),
+            onTap: () {
+              // acción de cerrar sesión
+            },
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
@@ -332,39 +404,7 @@ class AccountSettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Configuración de Cuenta")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextFormField(
-              decoration: const InputDecoration(labelText: 'Nombre de usuario'),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              decoration:
-                  const InputDecoration(labelText: 'Correo electrónico'),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {},
-              child: const Text("Cambiar contraseña",
-                  style: TextStyle(color: Color.fromARGB(255, 169, 29, 29))),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              onPressed: () {},
-              child: const Text("Guardar cambios"),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () {},
-              child: const Text("Eliminar cuenta",
-                  style: TextStyle(color: Colors.red)),
-            )
-          ],
-        ),
-      ),
+      body: const Center(child: Text("Pantalla de configuración")),
     );
   }
 }
