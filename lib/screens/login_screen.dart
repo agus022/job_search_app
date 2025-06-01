@@ -80,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ElevatedButton(
                   onPressed: () {
                     userCubit.login('21030761@itcelaya.edu.mx', 'panquecito');
-                    if (userCubit.state.logged) {
+                    if (userCubit.state.status == UserStatus.logged) {
                       Navigator.pushNamed(context, '/home');
                     }
                     // TODO: Mostrar logged failed

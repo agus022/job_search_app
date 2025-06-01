@@ -5,13 +5,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:job_search_oficial/entities/entities.dart';
 import 'package:job_search_oficial/helpers/location.dart';
 
+enum UserStatus { logged, uncofirmmed, unlogged, unregisterd }
+
 class UserState extends Equatable {
   final bool loading;
   final UserEntity? user;
   final List<UserEntity>? users;
   final String? message;
   final String? error;
-  final bool logged;
+  final UserStatus status;
 
   const UserState({
     this.loading = false,
@@ -19,7 +21,7 @@ class UserState extends Equatable {
     this.users,
     this.message,
     this.error,
-    this.logged = false,
+    this.status = UserStatus.unregisterd,
   });
 
   UserState copyWith({
@@ -28,7 +30,7 @@ class UserState extends Equatable {
     List<UserEntity>? users,
     String? message,
     String? error,
-    bool? logged,
+    UserStatus? status,
   }) {
     return UserState(
         loading: loading ?? this.loading,
@@ -36,11 +38,11 @@ class UserState extends Equatable {
         users: users ?? this.users,
         message: message,
         error: error,
-        logged: logged ?? this.logged);
+        status: status ?? this.status);
   }
 
   @override
-  List<Object?> get props => [loading, user, users, message, error, logged];
+  List<Object?> get props => [loading, user, users, message, error, status];
 }
 
 class UserCubit extends Cubit<UserState> {
@@ -50,7 +52,7 @@ class UserCubit extends Cubit<UserState> {
 
   UserCubit() : super(const UserState());
 
-  /// Client User Login
+  /// Client User Login 
   Future<void> login(String email, String password) async {
     emit(state.copyWith(loading: true, error: null, message: null));
     try {
@@ -69,13 +71,14 @@ class UserCubit extends Cubit<UserState> {
 
       emit(state.copyWith(
         loading: false,
-        logged: true,
+        status: UserStatus.logged,
         user: user,
         message: "Login exitoso",
       ));
     } on FirebaseAuthException catch (e) {
       emit(state.copyWith(
         loading: false,
+        status: UserStatus.uncofirmmed,
         error: e.message ?? "Error de autenticación",
       ));
     } catch (e) {
@@ -124,6 +127,7 @@ class UserCubit extends Cubit<UserState> {
         oficialProfile: null,
       );
 
+      // TODO: Mandar correo de confoirmación antes de registrar
       await _firestore
           .collection(usersCollection)
           .doc(uid)
@@ -131,6 +135,7 @@ class UserCubit extends Cubit<UserState> {
 
       emit(state.copyWith(
         loading: false,
+        status: UserStatus.uncofirmmed,
         user: newUser,
         message: "Cliente registrado",
       ));
@@ -175,7 +180,6 @@ class UserCubit extends Cubit<UserState> {
         'clientProfile': FieldValue.delete(),
         'oficialProfile': oficialProfileMap,
         'jobsIds': jobsIds,
-        'jobNames': jobNames,
         'location': GeoPoint(latitude, longitude),
       });
 
@@ -297,4 +301,10 @@ class UserCubit extends Cubit<UserState> {
       ));
     }
   }
+
+  // Post a calification of a Official
+  Future<void> qualifyOfficialUser() async {}
+
+  // Suscribe to a plan (Client)
+  Future<void> suscribePlan(PlanType plan) async {}
 }

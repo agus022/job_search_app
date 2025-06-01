@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:job_search_oficial/cubit/category_cubit.dart';
 import 'package:job_search_oficial/cubit/cubits.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    context.read<CategoryCubit>().getCategories();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     final userCubit = context.read<UserCubit>();
-    print('ID DEL USUARIO ${userCubit.state.user?.id}');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
@@ -29,7 +40,7 @@ class HomeScreen extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            backgroundColor: Colors.white,
             pinned: true,
             floating: true,
             snap: true,
@@ -74,28 +85,39 @@ class HomeScreen extends StatelessWidget {
               )
             ],
           ),
+
+          // TODO: Mnaejar el caso de Overflow width
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+            child: BlocBuilder<CategoryCubit, CategoryState>(
+                builder: (context, state) {
+              if (state.loading) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (state.error != null) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: Text(state.error!)),
+                );
+              }
+
+              final cats = state.categories ?? [];
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
-                  children: [
-                    _filterButton("Teams", true),
-                    const SizedBox(width: 8),
-                    _filterButton("Feed", false),
-                    const SizedBox(width: 8),
-                    _filterButton("Challenges", false),
-                    const SizedBox(width: 8),
-                    _filterButton("New Team", false),
-                    const SizedBox(width: 8),
-                    _filterButton("Aqui algo", false),
-                    // Agrega más si necesitas
-                  ],
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: cats.map((category) {
+                    return _filterButton(category.name);
+                  }).toList(),
                 ),
-              ),
-            ),
+              );
+            }),
           ),
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -128,6 +150,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -159,6 +182,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -172,6 +196,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
+
           SliverList(
             delegate: SliverChildListDelegate(
               [
@@ -238,15 +263,15 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _filterButton(String label, bool selected) {
+  Widget _filterButton(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: selected ? Colors.green : Colors.grey[300],
+        color: true ? Colors.green : Colors.grey[300],
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(label,
-          style: TextStyle(color: selected ? Colors.white : Colors.black)),
+          style: TextStyle(color: true ? Colors.white : Colors.black)),
     );
   }
 
@@ -262,8 +287,8 @@ class HomeScreen extends StatelessWidget {
         child: Row(
           children: [
             const CircleAvatar(
-              radius: 24,
-            ),
+                radius: 24,
+                backgroundImage: AssetImage('assets/avatar_placeholder.png')),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

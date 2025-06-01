@@ -6,37 +6,33 @@ import 'package:job_search_oficial/entities/entities.dart';
 
 class ServiceState extends Equatable {
   final bool loading;
-  final UserEntity? user;
-  final List<UserEntity>? users;
+  final List<Service>? services;
   final String? message;
   final String? error;
 
   const ServiceState({
     this.loading = false,
-    this.user,
-    this.users,
+    this.services,
     this.message,
     this.error,
   });
 
   ServiceState copyWith({
     bool? loading,
-    UserEntity? user,
-    List<UserEntity>? users,
+    List<Service>? services,
     String? message,
     String? error,
   }) {
     return ServiceState(
       loading: loading ?? this.loading,
-      user: user ?? this.user,
-      users: users ?? this.users,
+      services: services ?? this.services,
       message: message,
       error: error,
     );
   }
 
   @override
-  List<Object?> get props => [loading, user, users, message, error];
+  List<Object?> get props => [loading, services, message, error];
 }
 
 class ServiceCubit extends Cubit<ServiceState> {
@@ -46,88 +42,29 @@ class ServiceCubit extends Cubit<ServiceState> {
 
   ServiceCubit() : super(const ServiceState());
 
-  /// Get services
-  Future<void> login(String email, String password) async {
+  /// Solicitar un Servicio (Client y Oficial)
+  Future<void> requestService(
+      {required description, required oficialRef, required address}) async {
     emit(state.copyWith(loading: true, error: null, message: null));
     try {
-      UserCredential cred = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      String uid = cred.user!.uid;
-
-      DocumentSnapshot doc =
-          await _firestore.collection(servicesCollection).doc(uid).get();
-      if (!doc.exists) throw Exception("Perfil de usuario no encontrado.");
-
-      final user =
-          UserEntity.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-
-      emit(state.copyWith(
-        loading: false,
-        user: user,
-        message: "Login exitoso",
-      ));
-    } on FirebaseAuthException catch (e) {
-      emit(state.copyWith(
-        loading: false,
-        error: e.message ?? "Error de autenticación",
-      ));
-    } catch (e) {
-      emit(state.copyWith(
-        loading: false,
-        error: e.toString(),
-      ));
-    }
-  }
-
-  /// Crear/Acordar Servicio
-  Future<void> registerService({
-    required String name,
-    required String lastName,
-    required String email,
-    required String password,
-    required String phone,
-    required String profilePicture,
-    required String address,
-    double? lat,
-    double? lon,
-  }) async {
-    emit(state.copyWith(loading: true, error: null, message: null));
-    try {
-      UserCredential cred = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      String uid = cred.user!.uid;
-      final location = (lat != null && lon != null) ? GeoPoint(lat, lon) : null;
-
-      final newUser = UserEntity(
-        id: uid,
-        name: name,
-        lastName: lastName,
-        email: email,
-        phone: phone,
-        type: UserType.client,
-        creationDate: DateTime.now(),
-        profilePicture: profilePicture,
-        location: location,
-        clientProfile: ClientProfile(
-          address: address,
-          plan: PlanType.free,
-        ),
-        oficialProfile: null,
+      final newService = Service(
+        clientRef: _auth.currentUser!.uid,
+        oficialRef: oficialRef,
+        date: DateTime.now(),
+        address: address,
+        description: description,
+        state: ServiceStatus.pendent,
+        // Atributos adicionales para el posterior
+        price: 0.0,
+        paymentMethods: [],
       );
 
-      await _firestore
-          .collection(servicesCollection)
-          .doc(uid)
-          .set(newUser.toMap());
+      await _firestore.collection(servicesCollection).add(newService.toMap());
+      // TODO: Mandar un pushNotification al oficial
 
       emit(state.copyWith(
         loading: false,
-        user: newUser,
-        message: "Cliente registrado",
+        message: "Servicio solicitado, esperando respuesta del oficial...",
       ));
     } on FirebaseAuthException catch (e) {
       emit(state.copyWith(
@@ -143,18 +80,73 @@ class ServiceCubit extends Cubit<ServiceState> {
   }
 
   // Accept a Service
-  Future<void> acceptService(String serviceId) async {}
+  Future<void> acceptService(
+      String serviceId, List<String> paymentMethods) async {
+    emit(state.copyWith(loading: true, error: null, message: null));
+    try {
+      await _firestore.collection(servicesCollection).doc(serviceId).update({
+        'status': ServiceStatus.accepted.name,
+        'paymentMethods': paymentMethods
+      });
 
-  // Decline a Service
-  Future<void> declineService(String serviceId) async {}
-
-  // Get my Services (Client/Oficcial)
-  Future<List<Service>> getMyServices(userId) async {
-    return [];
+      // TODO: Mandar un pushNotification al cliente
+      emit(state.copyWith(
+          loading: false,
+          error: null,
+          message: 'Servicio aceptado por el oficial'));
+    } catch (e) {
+      emit(state.copyWith(
+        loading: false,
+        error: e.toString(),
+      ));
+    }
   }
 
-  // Get my Services by status (Client/Official)
-  Future<List<Service>> getMyServicesByStatus(userId, status) async {
-    return [];
+  // Decline a Service
+  Future<void> declineService(
+    String serviceId,
+  ) async {
+    emit(state.copyWith(loading: true, error: null, message: null));
+    try {
+      await _firestore.collection(servicesCollection).doc(serviceId).update({
+        'status': ServiceStatus.cancelled.name,
+      });
+
+      // TODO: Mandar un pushNotification al cliente
+      emit(state.copyWith(
+          loading: false,
+          error: null,
+          message: 'Servicio declinado por el oficial'));
+    } catch (e) {
+      emit(state.copyWith(
+        loading: false,
+        error: e.toString(),
+      ));
+    }
+  }
+
+  // Get my Services (Client/Oficcial)
+  Future<List<Service>> getMyServices(userId, UserType userType) async {
+    emit(state.copyWith(loading: true, error: null, message: null));
+    try {
+      String refName = userType == UserType.client ? 'clientRef' : 'oficialRef';
+
+      final snap = await _firestore
+          .collection(servicesCollection)
+          .where({refName}, isEqualTo: userId).get();
+
+      final services = snap.docs.map((data) {
+        final rawData = data.data();
+        return Service.fromMap(rawData);
+      }).toList();
+
+      return services;
+    } catch (e) {
+      emit(state.copyWith(
+          loading: false,
+          error: e.toString(),
+          message: 'No se pudieron obtener los servicios.'));
+      return [];
+    }
   }
 }
