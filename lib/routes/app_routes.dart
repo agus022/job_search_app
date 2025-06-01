@@ -1,5 +1,7 @@
 // lib/routes/app_routes.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:job_search_oficial/cubit/category_cubit.dart';
 import 'package:job_search_oficial/screens/home_screen.dart';
 import 'package:job_search_oficial/screens/login_screen.dart';
 import 'package:job_search_oficial/screens/onboarding_screen.dart';
@@ -17,7 +19,9 @@ class AppRoutes {
         login: (context) => const LoginScreen(),
         splash: (context) => const SplashRouterScreen(),
         register: (context) => const RegisterScreen(),
-        home: (context) => const HomeScreen(),
+        home: (context) => MultiBlocProvider(providers: [
+          BlocProvider(create: (_) => CategoryCubit()),
+        ], child: const HomeScreen()),
         onboarding: (context) => const OnboardingScreen(),
       };
 }

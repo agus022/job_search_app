@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:job_search_oficial/cubit/category_cubit.dart';
 import 'package:job_search_oficial/cubit/cubits.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    context.read<CategoryCubit>().getCategories();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     final userCubit = context.read<UserCubit>();
-    print('ID DEL USUARIO ${userCubit.state.user?.id}');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
@@ -74,21 +85,39 @@ class HomeScreen extends StatelessWidget {
               )
             ],
           ),
+
+          // TODO: Mnaejar el caso de Overflow width
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _filterButton("Teams", true),
-                  _filterButton("Feed", false),
-                  _filterButton("Challenges", false),
-                  _filterButton("New Team", false),
-                  _filterButton("Aqui algo", false),
-                ],
-              ),
-            ),
+            child: BlocBuilder<CategoryCubit, CategoryState>(
+                builder: (context, state) {
+              if (state.loading) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (state.error != null) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: Text(state.error!)),
+                );
+              }
+
+              final cats = state.categories ?? [];
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: cats.map((category) {
+                    return _filterButton(category.name);
+                  }).toList(),
+                ),
+              );
+            }),
           ),
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -121,6 +150,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -152,6 +182,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -165,6 +196,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
+
           SliverList(
             delegate: SliverChildListDelegate(
               [
@@ -231,15 +263,15 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _filterButton(String label, bool selected) {
+  Widget _filterButton(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: selected ? Colors.green : Colors.grey[300],
+        color: true ? Colors.green : Colors.grey[300],
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(label,
-          style: TextStyle(color: selected ? Colors.white : Colors.black)),
+          style: TextStyle(color: true ? Colors.white : Colors.black)),
     );
   }
 
