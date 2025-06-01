@@ -29,7 +29,7 @@ class HomeScreen extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             pinned: true,
             floating: true,
             snap: true,
@@ -77,15 +77,22 @@ class HomeScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _filterButton("Teams", true),
-                  _filterButton("Feed", false),
-                  _filterButton("Challenges", false),
-                  _filterButton("New Team", false),
-                  _filterButton("Aqui algo", false),
-                ],
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _filterButton("Teams", true),
+                    const SizedBox(width: 8),
+                    _filterButton("Feed", false),
+                    const SizedBox(width: 8),
+                    _filterButton("Challenges", false),
+                    const SizedBox(width: 8),
+                    _filterButton("New Team", false),
+                    const SizedBox(width: 8),
+                    _filterButton("Aqui algo", false),
+                    // Agrega más si necesitas
+                  ],
+                ),
               ),
             ),
           ),
@@ -255,8 +262,8 @@ class HomeScreen extends StatelessWidget {
         child: Row(
           children: [
             const CircleAvatar(
-                radius: 24,
-                backgroundImage: AssetImage('assets/avatar_placeholder.png')),
+              radius: 24,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
