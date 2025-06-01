@@ -1,44 +1,11 @@
+// imports necesarios
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:job_search_oficial/cubit/category_cubit.dart';
 import 'package:job_search_oficial/cubit/cubits.dart';
+import 'package:job_search_oficial/entities/entities.dart';
 import 'package:job_search_oficial/widgets/custom_navabar.dart';
-
-class Oficial {
-  final String name;
-  final String description;
-  final String image;
-  final String followers;
-  final String projects;
-  Oficial(
-      {required this.name,
-      required this.description,
-      required this.image,
-      required this.followers,
-      required this.projects});
-}
-
-final List<Oficial> oficiales = [
-  Oficial(
-      name: "Sophie Bennett",
-      description: "Product Designer who focuses on simplicity & usability.",
-      image: "assets/img/user.webp",
-      followers: "312",
-      projects: "48"),
-  Oficial(
-      name: "Oficial Don",
-      description: "Electricista con experiencia y recomendaciones.",
-      image: "assets/img/user.webp",
-      followers: "2.6K",
-      projects: "34"),
-  Oficial(
-      name: "Oficial Juan",
-      description: "Plomero certificado para trabajos residenciales.",
-      image: "assets/img/user.webp",
-      followers: "506",
-      projects: "12"),
-];
+import 'package:job_search_oficial/widgets/lottie_loader.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -50,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final PageController _pageController = PageController(viewportFraction: 0.8);
+  String selectedCategoryId = 'all';
 
   @override
   void initState() {
@@ -59,16 +27,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final jobCubit = context.read<JobCubit>();
+
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: const Color(0xFFF9FAFB),
       drawer: _buildDrawer(context),
       bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(bottom: 5, left: 24, right: 24),
+        padding: const EdgeInsets.only(bottom: 5, left: 24, right: 24),
         child: Container(
           decoration: BoxDecoration(
             color: const Color.fromARGB(255, 255, 255, 255),
-            borderRadius: BorderRadius.only(
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(44),
               topRight: Radius.circular(44),
             ),
@@ -76,18 +46,17 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(44),
-              color: Color(0xff292526),
-              boxShadow: [
+              color: const Color(0xff292526),
+              boxShadow: const [
                 BoxShadow(
-                  color: const Color.fromARGB(197, 255, 255, 255),
+                  color: Color.fromARGB(197, 255, 255, 255),
                   blurRadius: 10,
                   spreadRadius: 3,
-                  offset: Offset(0, 0),
                 ),
               ],
             ),
-            padding: EdgeInsets.only(top: 10, bottom: 10, left: 16, right: 16),
-            child: CustomNavBar(),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            child: const CustomNavBar(),
           ),
         ),
       ),
@@ -100,54 +69,43 @@ class _HomeScreenState extends State<HomeScreen> {
             automaticallyImplyLeading: false,
             expandedHeight: 166,
             flexibleSpace: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final double percent =
-                    ((constraints.maxHeight - kToolbarHeight) /
-                            (140 - kToolbarHeight))
-                        .clamp(0.0, 1.0);
-
-                // Cuando scroll hacia abajo (colapsado), ocultamos todo
+              builder: (context, constraints) {
+                final percent = ((constraints.maxHeight - kToolbarHeight) /
+                        (140 - kToolbarHeight))
+                    .clamp(0.0, 1.0);
                 if (percent == 0) return const SizedBox.shrink();
 
                 return FlexibleSpaceBar(
                   background: Opacity(
                     opacity: percent,
                     child: Padding(
-                      padding: const EdgeInsets.only(
-                        top: 60.0,
-                        left: 16,
-                        right: 16,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      padding:
+                          const EdgeInsets.only(top: 60, left: 16, right: 16),
+                      child: Row(
                         children: [
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () =>
-                                    _scaffoldKey.currentState?.openDrawer(),
-                                child: const CircleAvatar(
-                                  radius: 24,
-                                  backgroundImage:
-                                      AssetImage('assets/img/user.webp'),
+                          GestureDetector(
+                            onTap: () =>
+                                _scaffoldKey.currentState?.openDrawer(),
+                            child: const CircleAvatar(
+                              radius: 24,
+                              backgroundImage:
+                                  AssetImage('assets/img/user.webp'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              decoration: InputDecoration(
+                                hintText: 'Search...',
+                                filled: true,
+                                fillColor: Colors.grey[200],
+                                prefixIcon: const Icon(Icons.search),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: TextField(
-                                  decoration: InputDecoration(
-                                    hintText: 'Search...',
-                                    filled: true,
-                                    fillColor: Colors.grey[200],
-                                    prefixIcon: const Icon(Icons.search),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
@@ -166,27 +124,106 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: BlocBuilder<CategoryCubit, CategoryState>(
                   builder: (context, state) {
                     if (state.loading) {
-                      return const SizedBox(
-                          height: 24, child: CircularProgressIndicator());
-                    }
-                    if (state.error != null) {
-                      return Text(state.error!);
+                      return const CircularProgressIndicator();
                     }
                     final cats = state.categories ?? [];
+
                     return ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      itemCount: cats.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) => Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 14),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(cats[index].name,
-                            style: const TextStyle(color: Colors.black)),
-                      ),
+                      itemCount: cats.length + 1, // +1 para el botón 'Todos'
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          // Botón 'Todos'
+                          return GestureDetector(
+                            onTap: () async {
+                              setState(() {
+                                selectedCategoryId = 'all';
+                              });
+
+                              // Obtener todos los trabajos
+                              final jobs = await jobCubit.getAllJobs();
+                              print('Jobs obtenidos: ${jobs.length}');
+                              // Obtener usuarios relacionados a cada trabajo
+                              List<UserEntity> allUsers = [];
+
+                              for (var job in jobs) {
+                                final users =
+                                    await jobCubit.getUsersByJob(job.id);
+                                allUsers.addAll(users);
+                              }
+
+                              // Actualizar el estado con los usuarios encontrados
+                              jobCubit.setUsers(allUsers);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: selectedCategoryId == 'all'
+                                    ? Colors.black87
+                                    : Colors.grey[200],
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'Todos',
+                                style: TextStyle(
+                                  color: selectedCategoryId == 'all'
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        final category =
+                            cats[index - 1]; // porque index 0 es "Todos"
+
+                        return GestureDetector(
+                          onTap: () async {
+                            setState(() {
+                              selectedCategoryId = category.id;
+                            });
+
+                            await jobCubit.getJobsByCategory(category.id);
+                            final jobs = jobCubit.state.jobs ?? [];
+
+                            final Map<String, UserEntity> userMap = {};
+
+                            for (var job in jobs) {
+                              final users =
+                                  await jobCubit.getUsersByJob(job.id);
+                              for (var user in users) {
+                                userMap[user.id ?? UniqueKey().toString()] =
+                                    user;
+                              }
+                            }
+
+                            final allUsers = userMap.values.toList();
+                            jobCubit.setUsers(allUsers);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: selectedCategoryId == category.id
+                                  ? Colors.black87
+                                  : Colors.grey[200],
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              category.name,
+                              style: TextStyle(
+                                color: selectedCategoryId == category.id
+                                    ? Colors.white
+                                    : Colors.black,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(width: 8),
                     );
                   },
                 ),
@@ -196,29 +233,55 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 20.0),
-              child: SizedBox(
-                height: 390,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: oficiales.length,
-                  itemBuilder: (context, index) {
-                    return AnimatedBuilder(
-                      animation: _pageController,
-                      builder: (context, child) {
-                        double value = 1.0;
-                        if (_pageController.position.haveDimensions) {
-                          value = (_pageController.page! - index).abs();
-                          value = (1 - (value * 0.2)).clamp(0.9, 1.0);
-                        }
-                        return Transform.scale(
-                          scale: value,
-                          child: child,
+              child: BlocBuilder<JobCubit, JobState>(
+                builder: (context, state) {
+                  final users = state.users ?? [];
+
+                  if (state.loading) {
+                    return const SizedBox(
+                      height: 390,
+                      child: Center(
+                        child: LottieLoader(),
+                      ),
+                    );
+                  }
+
+                  if (users.isEmpty) {
+                    return const SizedBox(
+                      height: 390,
+                      child: Center(
+                        child: Text(
+                            'No se encontraron oficiales en esta categoría'),
+                      ),
+                    );
+                  }
+
+                  return SizedBox(
+                    height: 390,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: users.length,
+                      itemBuilder: (context, index) {
+                        final oficial = users[index];
+                        return AnimatedBuilder(
+                          animation: _pageController,
+                          builder: (context, child) {
+                            double value = 1.0;
+                            if (_pageController.position.haveDimensions) {
+                              value = (_pageController.page! - index).abs();
+                              value = (1 - (value * 0.2)).clamp(0.9, 1.0);
+                            }
+                            return Transform.scale(
+                              scale: value,
+                              child: child,
+                            );
+                          },
+                          child: _buildCardFromUser(context, oficial),
                         );
                       },
-                      child: _buildCard(context, oficiales[index]),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -227,104 +290,104 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCard(BuildContext context, Oficial oficial) {
-    return LayoutBuilder(
-      builder: (context, constraints) => Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.asset(
-                  oficial.image,
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+  Widget _buildCardFromUser(BuildContext context, UserEntity user) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.network(
+                user.profilePicture,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                          child: Text(oficial.name,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16))),
-                      const Icon(Icons.verified, color: Colors.green, size: 20),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(oficial.description,
-                      style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            const Icon(Icons.groups,
-                                size: 16, color: Colors.grey),
-                            const SizedBox(width: 4),
-                            Text(
-                              oficial.followers,
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey),
-                            ),
-                            const SizedBox(width: 16),
-                            const Icon(Icons.folder_copy,
-                                size: 16, color: Colors.grey),
-                            const SizedBox(width: 4),
-                            Text(
-                              oficial.projects,
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey),
-                            ),
-                          ],
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(user.name,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                    const Icon(Icons.verified, color: Colors.green, size: 20),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(user.oficialProfile?.description ?? '',
+                    style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.groups,
+                              size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            user.oficialProfile?.location ??
+                                'Ubicación no disponible',
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.grey),
+                          ),
+                          const SizedBox(width: 16),
+                          const Icon(Icons.folder_copy,
+                              size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            '5',
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: 60,
+                      height: 60,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/job_detail');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFFFFFD55),
+                          foregroundColor: Colors.black,
+                          shape: const CircleBorder(),
+                          padding: EdgeInsets.zero,
+                          elevation: 0,
+                        ),
+                        child: SvgPicture.asset(
+                          'assets/svg/arrow-top-right.svg',
+                          width: 24,
+                          height: 24,
+                          color: Colors.black,
                         ),
                       ),
-                      SizedBox(
-                        width: 60,
-                        height: 60,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/job_detail');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFFFFD55),
-                            foregroundColor: Colors.black,
-                            shape: const CircleBorder(),
-                            padding: EdgeInsets.zero,
-                            elevation: 0,
-                          ),
-                          child: SvgPicture.asset(
-                            'assets/svg/arrow-top-right.svg',
-                            width: 24,
-                            height: 24,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            )
-          ],
-        ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          )
+        ],
       ),
     );
   }
@@ -340,71 +403,39 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         children: [
-          UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(
-              color: Color.fromARGB(255, 51, 51, 49), // verde profesional
-            ),
-            currentAccountPicture: const CircleAvatar(
-              backgroundImage:
-                  AssetImage('assets/img/user.webp'), // Reemplaza con tu imagen
-            ),
-            accountName: Text(
-              'Cristian Quintana',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-            accountEmail: Text(
-              'cristian@email.com',
-              style: TextStyle(fontSize: 14),
-            ),
+          const UserAccountsDrawerHeader(
+            decoration: BoxDecoration(color: Color(0xFF333331)),
+            currentAccountPicture: CircleAvatar(
+                backgroundImage: AssetImage('assets/img/user.webp')),
+            accountName: Text('Cristian Quintana',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            accountEmail:
+                Text('cristian@email.com', style: TextStyle(fontSize: 14)),
           ),
           ListTile(
             leading: const Icon(Icons.person_outline, color: Colors.black87),
             title: const Text('Perfil'),
-            onTap: () {
-              Navigator.pushNamed(context, '/profile_detail');
-            },
+            onTap: () => Navigator.pushNamed(context, '/profile_detail'),
           ),
           ListTile(
             leading:
                 const Icon(Icons.group_add_outlined, color: Colors.black87),
             title: const Text('Convertirse en socio'),
-            onTap: () {
-              Navigator.pushNamed(context, '/partner');
-            },
+            onTap: () => Navigator.pushNamed(context, '/partner'),
           ),
           const Spacer(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Divider(thickness: 1),
-          ),
+          const Divider(thickness: 1),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.redAccent),
-            title: const Text(
-              'Cerrar sesión',
-              style: TextStyle(color: Colors.redAccent),
-            ),
+            title: const Text('Cerrar sesión',
+                style: TextStyle(color: Colors.redAccent)),
             onTap: () {
-              // acción de cerrar sesión
+              // cerrar sesión
             },
           ),
           const SizedBox(height: 20),
         ],
       ),
-    );
-  }
-}
-
-class AccountSettingsScreen extends StatelessWidget {
-  const AccountSettingsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Configuración de Cuenta")),
-      body: const Center(child: Text("Pantalla de configuración")),
     );
   }
 }
