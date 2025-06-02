@@ -1,124 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:job_search_oficial/cubit/user_cubit.dart';
+import 'package:job_search_oficial/entities/user.dart';
 
 class JobDetailScreen extends StatelessWidget {
-  final String name;
-  final String role;
-  final List<String> skills;
-  final double rating;
-  final int clients;
-  final int rate;
+  final UserEntity user;
 
-  const JobDetailScreen({
-    super.key,
-    required this.name,
-    required this.role,
-    required this.skills,
-    required this.rating,
-    required this.clients,
-    required this.rate,
-  });
+  const JobDetailScreen({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(user.name),
       ),
-      body: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Hero(
-                tag: 'name_$name',
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
-                  child: Image.asset(
-                    'assets/img/user.webp',
-                    height: 260,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      topRight: Radius.circular(32),
-                    ),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black12, blurRadius: 10),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$name',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.verified,
-                              color: Colors.green, size: 18),
-                          const SizedBox(width: 6),
-                          Text(''),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            children: [
-                              const Icon(Icons.groups, color: Colors.black),
-                              const SizedBox(height: 4),
-                              Text(""),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              const Icon(Icons.folder, color: Colors.black),
-                              const SizedBox(height: 4),
-                              Text(""),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: const Text("Solicitar"),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            ],
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ListView(
+          children: [
+            CircleAvatar(
+              radius: 50,
+              backgroundImage: NetworkImage(user.profilePicture),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '${user.name} ${user.lastName}',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(user.oficialProfile?.description ?? 'Sin descripción'),
+            const Divider(height: 32),
+            Text('Ubicación: ${user.oficialProfile?.location ?? 'N/A'}'),
+            Text('Teléfono: ${user.phone}'),
+            Text('Email: ${user.email}'),
+            const Divider(height: 32),
+            Text('Calificaciones:',
+                style: Theme.of(context).textTheme.titleMedium),
+            ...?user.oficialProfile?.califications?.map((cal) => ListTile(
+                  title: Text(cal.comment),
+                  subtitle: Text('Puntuación: ${cal.punctuation.name}'),
+                )),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-        ],
+          icon: const Icon(Icons.bolt),
+          label: const Text('Solicitar Servicio Ahora'),
+          onPressed: () {
+            final currentUser = context.read<UserCubit>().state.user;
+
+            if (currentUser == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Debes iniciar sesión para continuar')),
+              );
+              return;
+            }
+
+            Navigator.pushNamed(
+              context,
+              '/request_service',
+              arguments: {
+                'client': currentUser,
+                'oficial': user,
+              },
+            );
+          },
+        ),
       ),
     );
   }

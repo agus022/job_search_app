@@ -120,17 +120,21 @@ class OficialProfile {
   final String description;
   final String location;
   final String certifications;
-  final List<String> jobsIds;
+  final List<DocumentReference> jobIds;
   final List<String> jobNames;
   final List<Calification>? califications;
+  final List<String> categoryIds;
+  final List<String> categoryNames;
 
   OficialProfile({
     required this.description,
     required this.location,
     required this.certifications,
-    required this.jobsIds,
+    required this.jobIds,
     required this.jobNames,
     this.califications,
+    this.categoryIds = const [],
+    this.categoryNames = const [],
   });
 
   factory OficialProfile.fromMap(Map<String, dynamic> map) {
@@ -145,15 +149,14 @@ class OficialProfile {
       description: map['description']?.toString() ?? '',
       location: map['location']?.toString() ?? '',
       certifications: map['certifications']?.toString() ?? '',
-      jobsIds: (map['jobsIds'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
+      jobIds: List<DocumentReference>.from(map['jobIds'] ?? []),
       jobNames: (map['jobNames'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
       califications: parsedCalifications,
+      categoryIds: List<String>.from(map['categoryIds'] ?? []),
+      categoryNames: List<String>.from(map['categoryNames'] ?? []),
     );
   }
 
@@ -162,11 +165,13 @@ class OficialProfile {
       'description': description,
       'location': location,
       'certifications': certifications,
-      'jobsIds': jobsIds,
+      'jobsIds': jobIds,
       'jobNames': jobNames,
       // Si califications es null, omitimos el campo; si no, convertimos cada Calification a Map
       if (califications != null)
         'califications': califications!.map((c) => c.toMap()).toList(),
+      'categoryIds': categoryIds,
+      'categoryNames': categoryNames,
     };
   }
 }

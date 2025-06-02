@@ -14,6 +14,8 @@ class Service {
   final ServiceStatus state;
   final double price;
   final List<PaymentMethod> paymentMethods;
+  final bool clientConfirmed;
+  final bool oficialConfirmed;
 
   Service({
     this.id,
@@ -25,6 +27,8 @@ class Service {
     required this.state,
     required this.price,
     required this.paymentMethods,
+    this.clientConfirmed = false,
+    this.oficialConfirmed = false,
   });
 
   factory Service.fromMap(Map<String, dynamic> map, {String? docId}) {
@@ -37,7 +41,6 @@ class Service {
               ))
           .toList();
     }
-
     return Service(
       id: docId ?? map['id'] as String?,
       clientRef: map['clientRef'] as String,
@@ -51,6 +54,8 @@ class Service {
       ),
       price: (map['price'] as num).toDouble(),
       paymentMethods: parsedPayments,
+      clientConfirmed: map['clientConfirmed'] ?? false,
+      oficialConfirmed: map['oficialConfirmed'] ?? false,
     );
   }
 
@@ -65,6 +70,8 @@ class Service {
       'state': state.name,
       'price': price,
       'paymentMethods': paymentMethods.map((pm) => pm.name).toList(),
+      'clientConfirmed': clientConfirmed,
+      'oficialConfirmed': oficialConfirmed,
     };
   }
 }

@@ -55,29 +55,6 @@ class JobCubit extends Cubit<JobState> {
   }
 
   // Obtener todos los Jobs
-  Future<List<Job>> getJobs() async {
-    emit(state.copyWith(loading: true, error: null, message: null));
-    try {
-      final snap = await _firestore.collection(collectionJobs).get();
-
-      final jobs = snap.docs
-          .map((job) => Job.fromMap(job.data(), docId: job.id))
-          .toList();
-
-      emit(state.copyWith(
-        loading: false,
-        jobs: jobs,
-        message: 'Trabajos cargados',
-      ));
-      return jobs;
-    } catch (e) {
-      emit(state.copyWith(
-        loading: false,
-        error: 'Error cargando trabajos: $e',
-      ));
-      return [];
-    }
-  }
 
   Future<List<Job>> getAllJobs() async {
     emit(state.copyWith(loading: true, error: null, message: null));
@@ -85,7 +62,7 @@ class JobCubit extends Cubit<JobState> {
       final snap = await _firestore.collection('jobs').get();
 
       final jobs = snap.docs
-          .map((doc) => Job.fromMap(doc.data(), docId: doc.id))
+          .map((doc) => Job.fromMap(doc.data(), doc.id, docId: ''))
           .toList();
 
       emit(state.copyWith(jobs: jobs, loading: false));
@@ -173,4 +150,6 @@ class JobCubit extends Cubit<JobState> {
       return [];
     }
   }
+
+  getMultipleJobsByCategories(List<String> selectedCategoryIds) {}
 }

@@ -13,9 +13,10 @@ class Job {
     required this.categoryNameRef,
   });
 
-  factory Job.fromMap(Map<String, dynamic> map, {required String docId}) {
+  factory Job.fromMap(Map<String, dynamic> map, String id,
+      {required String docId}) {
     return Job(
-      id: docId,
+      id: id,
       name: map['name']?.toString() ?? 'Sin nombre',
       categoryName: map['categoryName']?.toString() ?? '',
       categoryNameRef: map['categoryNameRef'] is DocumentReference
