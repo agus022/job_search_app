@@ -22,6 +22,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
   late String serviceId;
   late bool isOficial;
   bool _initialized = false;
+  bool _navigatedOut = false;
 
   StreamSubscription<DocumentSnapshot>? _firestoreSubscription;
   StreamSubscription<LocationData>? _locationSubscription;
@@ -76,11 +77,20 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
       if (!doc.exists) return;
 
       final data = doc.data()!;
-      if (data['state'] == 'cancelled') {
+      if (data['state'] == 'cancelled' && !_navigatedOut) {
+        _navigatedOut = true;
         if (mounted) {
+          // Limpiar activeService del usuario actual
+          final userId = FirebaseAuth.instance.currentUser!.uid;
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .update({'activeService': null});
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('El servicio fue cancelado.')),
           );
+
           Navigator.pushReplacementNamed(context, '/home');
         }
         return;
