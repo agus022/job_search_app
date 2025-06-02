@@ -81,7 +81,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('El servicio fue cancelado.')),
           );
-          Navigator.pop(context);
+          Navigator.pushReplacementNamed(context, '/home');
         }
         return;
       }
@@ -108,7 +108,9 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
         .doc(userId)
         .update({'activeService': null});
 
-    if (mounted) Navigator.pop(context);
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/home');
+    }
   }
 
   @override

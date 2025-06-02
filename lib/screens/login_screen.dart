@@ -173,19 +173,26 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void checkActiveService(
+  Future<void> checkActiveService(
       BuildContext context, String userId, bool isOficial) async {
-    final userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
-    final serviceId = userDoc.data()?['activeService'];
+    final query = await FirebaseFirestore.instance
+        .collection('services')
+        .where(isOficial ? 'oficialRef' : 'clientRef', isEqualTo: userId)
+        .where('state', isEqualTo: 'accepted') // o los que quieras permitir
+        .limit(1)
+        .get();
 
-    if (serviceId != null) {
-      Navigator.pushReplacementNamed(context, '/liveTracking', arguments: {
-        'serviceId': serviceId,
-        'isOficial': isOficial,
-      });
-    } else {
-      Navigator.pushReplacementNamed(context, '/home');
+    if (query.docs.isNotEmpty) {
+      final serviceId = query.docs.first.id;
+
+      Navigator.pushReplacementNamed(
+        context,
+        '/live_tracking',
+        arguments: {
+          'serviceId': serviceId,
+          'isOficial': isOficial,
+        },
+      );
     }
   }
 }
