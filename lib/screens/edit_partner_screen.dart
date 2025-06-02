@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:job_search_oficial/cubit/cubits.dart';
 
-class PartnerScreen extends StatefulWidget {
-  const PartnerScreen({super.key});
+class EditPartnerProfileScreen extends StatefulWidget {
+  const EditPartnerProfileScreen({super.key});
 
   @override
-  State<PartnerScreen> createState() => _PartnerScreenState();
+  State<EditPartnerProfileScreen> createState() =>
+      _EditPartnerProfileScreenState();
 }
 
-class _PartnerScreenState extends State<PartnerScreen> {
+class _EditPartnerProfileScreenState extends State<EditPartnerProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _descController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  List<String> selectedJobs = [];
+  List<String> selectedJobNames = [];
   String? selectedCategoryId;
-  final List<String> selectedJobs = [];
-  final List<String> selectedJobNames = [];
 
   @override
   void initState() {
@@ -23,41 +25,43 @@ class _PartnerScreenState extends State<PartnerScreen> {
     context.read<CategoryCubit>().getCategories();
   }
 
-  void _submitForm() async {
-    if (!_formKey.currentState!.validate() || selectedJobs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Completa todos los campos')),
-      );
-      return;
-    }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final user = context.read<UserCubit>().state.user!;
+    final profile = user.oficialProfile;
 
+    _descController.text = profile?.description ?? '';
+    _locationController.text = profile?.location ?? '';
+
+    selectedJobs = profile?.jobIds.map((ref) => (ref).id).toList() ?? [];
+    selectedJobNames = profile?.jobNames ?? [];
+  }
+
+  void _submit() async {
     final userCubit = context.read<UserCubit>();
-    final user = userCubit.state.user;
-
-    if (user == null) return;
+    final user = userCubit.state.user!;
 
     final jobRefs = selectedJobs.map((id) {
       return FirebaseFirestore.instance.collection('jobs').doc(id);
     }).toList();
 
-    final oficialProfile = {
+    final updatedProfile = {
       'description': _descController.text.trim(),
-      'location': 'Celaya, Gto.', // Puedes hacerlo editable
+      'location': _locationController.text.trim(),
       'jobIds': jobRefs,
-      'califications': [], // Estructura inicial vacía
+      'jobNames': selectedJobNames,
     };
 
     await FirebaseFirestore.instance.collection('users').doc(user.id).update({
-      'type': 'official',
-      'oficialProfile': oficialProfile,
-      'clientProfile': FieldValue.delete(),
+      'oficialProfile': updatedProfile,
     });
 
     await userCubit.refreshUser();
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('¡Ya eres un socio oficial!')),
+        const SnackBar(content: Text('Perfil actualizado')),
       );
       Navigator.pop(context);
     }
@@ -68,39 +72,39 @@ class _PartnerScreenState extends State<PartnerScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
+        title: const Text('Editar perfil de socio'),
         backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          'Convertirse en socio',
-          style: TextStyle(color: Colors.black),
-        ),
+        foregroundColor: Colors.black,
+        elevation: 1,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Descripción de tu experiencia',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Descripción de tu experiencia'),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _descController,
                 maxLines: 3,
                 decoration: const InputDecoration(
-                  hintText: 'Ej. Sé hacer mezclas, plomería, etc.',
-                  border: OutlineInputBorder(),
-                ),
+                    border: OutlineInputBorder(),
+                    hintText: 'Ej. Mezclo concreto, coloco tabiques...'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Campo requerido' : null,
               ),
-              const SizedBox(height: 24),
-              const Text('Selecciona una categoría'),
+              const SizedBox(height: 20),
+              const Text('Ubicación textual'),
               const SizedBox(height: 8),
+              TextFormField(
+                controller: _locationController,
+                decoration: const InputDecoration(
+                    border: OutlineInputBorder(), hintText: 'Ej. Celaya, Gto.'),
+              ),
+              const SizedBox(height: 20),
+              const Text('Selecciona categoría'),
               BlocBuilder<CategoryCubit, CategoryState>(
                 builder: (context, state) {
                   final categories = state.categories ?? [];
@@ -122,13 +126,11 @@ class _PartnerScreenState extends State<PartnerScreen> {
                         context.read<JobCubit>().getJobsByCategory(id);
                       }
                     },
-                    validator: (value) =>
-                        value == null ? 'Selecciona una categoría' : null,
                   );
                 },
               ),
-              const SizedBox(height: 24),
-              const Text('Selecciona los trabajos que sabes hacer'),
+              const SizedBox(height: 20),
+              const Text('Selecciona tus trabajos'),
               BlocBuilder<JobCubit, JobState>(
                 builder: (context, state) {
                   final jobs = state.jobs ?? [];
@@ -155,9 +157,9 @@ class _PartnerScreenState extends State<PartnerScreen> {
               ),
               const SizedBox(height: 32),
               ElevatedButton.icon(
-                onPressed: _submitForm,
-                icon: const Icon(Icons.check_circle),
-                label: const Text('Convertirse en socio'),
+                onPressed: _submit,
+                icon: const Icon(Icons.save),
+                label: const Text('Guardar cambios'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
@@ -167,7 +169,6 @@ class _PartnerScreenState extends State<PartnerScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
             ],
           ),
         ),

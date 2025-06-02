@@ -11,6 +11,7 @@ class UserState extends Equatable {
   final bool loading;
   final UserEntity? user;
   final List<UserEntity>? users;
+  final List<Job>? jobs;
   final String? message;
   final String? error;
   final UserStatus status;
@@ -19,6 +20,7 @@ class UserState extends Equatable {
     this.loading = false,
     this.user,
     this.users,
+    this.jobs,
     this.message,
     this.error,
     this.status = UserStatus.unregisterd,
@@ -28,6 +30,7 @@ class UserState extends Equatable {
     bool? loading,
     UserEntity? user,
     List<UserEntity>? users,
+    List<Job>? jobs,
     String? message,
     String? error,
     UserStatus? status,
@@ -36,13 +39,15 @@ class UserState extends Equatable {
         loading: loading ?? this.loading,
         user: user ?? this.user,
         users: users ?? this.users,
+        jobs: jobs ?? this.jobs,
         message: message,
         error: error,
         status: status ?? this.status);
   }
 
   @override
-  List<Object?> get props => [loading, user, users, message, error, status];
+  List<Object?> get props =>
+      [loading, user, users, jobs, message, error, status];
 }
 
 class UserCubit extends Cubit<UserState> {
@@ -87,6 +92,37 @@ class UserCubit extends Cubit<UserState> {
         error: e.toString(),
       ));
     }
+  }
+
+  Future<void> logout() async {
+    emit(state.copyWith(loading: true, error: null, message: null));
+    try {
+      await _auth.signOut(); // Cierra la sesión en Firebase
+      emit(const UserState(
+        status: UserStatus.unlogged,
+        message: "Sesión cerrada",
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        loading: false,
+        error: "Error al cerrar sesión: ${e.toString()}",
+      ));
+    }
+  }
+
+  Future<void> refreshUser() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    final doc =
+        await _firestore.collection(usersCollection).doc(currentUser.uid).get();
+
+    if (!doc.exists) return;
+
+    final updatedUser =
+        UserEntity.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+
+    emit(state.copyWith(user: updatedUser));
   }
 
   /// Client Register User
@@ -157,7 +193,7 @@ class UserCubit extends Cubit<UserState> {
     required String description,
     required String textualLocation,
     required String certifications,
-    required List<String> jobsIds,
+    required List<DocumentReference> jobsIds,
     required List<String> jobNames,
     required double latitude,
     required double longitude,
@@ -259,6 +295,22 @@ class UserCubit extends Cubit<UserState> {
       ));
       return [];
     }
+  }
+
+  Future<void> getMultipleJobsByCategories(List<String> catIds) async {
+    List<Job> all = [];
+
+    for (final id in catIds) {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('jobs')
+          .where('categoryId', isEqualTo: id)
+          .get();
+
+      all.addAll(
+          snapshot.docs.map((e) => Job.fromMap(e.data(), e.id, docId: '')));
+    }
+
+    emit(state.copyWith(jobs: all));
   }
 
   Future<void> getOfficialsByLocation(double latitude, double longitude,

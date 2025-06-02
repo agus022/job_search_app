@@ -1,4 +1,5 @@
 // imports necesarios
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
@@ -23,16 +24,23 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     context.read<CategoryCubit>().getCategories();
     super.initState();
+    final user = context.read<UserCubit>().state.user;
+    if (user != null && user.type == UserType.official) {
+      listenForIncomingRequests(user.id!, context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<UserCubit>().state.user;
     final jobCubit = context.read<JobCubit>();
+
+    // Si el usuario no está autenticado, redirigir al login
 
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: const Color(0xFFF9FAFB),
-      drawer: _buildDrawer(context),
+      drawer: _buildDrawer(context, user),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(bottom: 5, left: 24, right: 24),
         child: Container(
@@ -86,11 +94,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           GestureDetector(
                             onTap: () =>
                                 _scaffoldKey.currentState?.openDrawer(),
-                            child: const CircleAvatar(
-                              radius: 24,
-                              backgroundImage:
-                                  AssetImage('assets/img/user.webp'),
-                            ),
+                            child: CircleAvatar(
+                                radius: 24,
+                                backgroundImage: user?.profilePicture != null
+                                    ? NetworkImage(user!.profilePicture)
+                                    : const AssetImage('assets/img/user.webp')
+                                        as ImageProvider),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -142,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                               // Obtener todos los trabajos
                               final jobs = await jobCubit.getAllJobs();
-                              print('Jobs obtenidos: ${jobs.length}');
+
                               // Obtener usuarios relacionados a cada trabajo
                               List<UserEntity> allUsers = [];
 
@@ -201,6 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                             final allUsers = userMap.values.toList();
                             jobCubit.setUsers(allUsers);
+                            print('Usuarios encontrados: ${allUsers.length}');
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -364,7 +374,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       height: 60,
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/job_detail');
+                          Navigator.pushNamed(
+                            context,
+                            '/job_detail',
+                            arguments: user,
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Color(0xFFFFFD55),
@@ -392,50 +406,125 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Drawer _buildDrawer(BuildContext context) {
+  Drawer _buildDrawer(BuildContext context, UserEntity? user) {
+    final isOfficial = user?.type == UserType.official;
+
     return Drawer(
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(40),
-          bottomRight: Radius.circular(40),
-        ),
-      ),
       child: Column(
         children: [
-          const UserAccountsDrawerHeader(
-            decoration: BoxDecoration(color: Color(0xFF333331)),
+          UserAccountsDrawerHeader(
+            decoration: const BoxDecoration(color: Color(0xFF333331)),
             currentAccountPicture: CircleAvatar(
-                backgroundImage: AssetImage('assets/img/user.webp')),
-            accountName: Text('Cristian Quintana',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              backgroundImage: user?.profilePicture != null
+                  ? NetworkImage(user!.profilePicture)
+                  : const AssetImage('assets/img/user.webp') as ImageProvider,
+            ),
+            accountName: Text(
+              '${user?.name ?? ''} ${user?.lastName ?? ''} ${user?.type == UserType.official ? ' (Oficial)' : ''}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
             accountEmail:
-                Text('cristian@email.com', style: TextStyle(fontSize: 14)),
+                Text(user?.email ?? '', style: const TextStyle(fontSize: 14)),
           ),
           ListTile(
             leading: const Icon(Icons.person_outline, color: Colors.black87),
             title: const Text('Perfil'),
-            onTap: () => Navigator.pushNamed(context, '/profile_detail'),
+            onTap: () => Navigator.pushNamed(
+              context,
+              '/profile_detail',
+              arguments: user,
+            ),
           ),
-          ListTile(
-            leading:
-                const Icon(Icons.group_add_outlined, color: Colors.black87),
-            title: const Text('Convertirse en socio'),
-            onTap: () => Navigator.pushNamed(context, '/partner'),
-          ),
+          if (user?.type == UserType.official)
+            ListTile(
+              leading: const Icon(Icons.engineering, color: Colors.black87),
+              title: const Text('Editar perfil de socio'),
+              onTap: () {
+                Navigator.pushNamed(context, '/edit_partner_profile',
+                    arguments: user);
+              },
+            ),
+          if (!isOfficial)
+            ListTile(
+              leading:
+                  const Icon(Icons.group_add_outlined, color: Colors.black87),
+              title: const Text('Convertirse en socio'),
+              onTap: () => Navigator.pushNamed(context, '/partner'),
+            ),
           const Spacer(),
           const Divider(thickness: 1),
           ListTile(
-            leading: const Icon(Icons.logout, color: Colors.redAccent),
-            title: const Text('Cerrar sesión',
-                style: TextStyle(color: Colors.redAccent)),
-            onTap: () {
-              // cerrar sesión
+            leading: const Icon(Icons.logout),
+            title: const Text('Cerrar sesión'),
+            onTap: () async {
+              await context.read<UserCubit>().logout();
+              Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
             },
           ),
           const SizedBox(height: 20),
         ],
       ),
     );
+  }
+
+  void listenForIncomingRequests(String oficialId, BuildContext context) {
+    FirebaseFirestore.instance
+        .collection('services')
+        .where('oficialRef', isEqualTo: oficialId)
+        .where('state', isEqualTo: 'pendent')
+        .snapshots()
+        .listen((snapshot) {
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final service = Service.fromMap(data, docId: doc.id);
+
+        // Mostrar solo si aún está pendiente
+        if (service.state == ServiceStatus.pendent) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => AlertDialog(
+              title: const Text('Nueva solicitud'),
+              content: Text('¿Aceptar servicio en: ${service.address}?'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    FirebaseFirestore.instance
+                        .collection('services')
+                        .doc(service.id)
+                        .update({
+                      'state': ServiceStatus.cancelled.name,
+                    });
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Rechazar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    FirebaseFirestore.instance
+                        .collection('services')
+                        .doc(service.id)
+                        .update({
+                      'state': ServiceStatus.accepted.name,
+                      'oficialConfirmed': true
+                    });
+                    Navigator.of(context).pop();
+                    Navigator.pushNamed(
+                      context,
+                      '/live_tracking',
+                      arguments: {
+                        'serviceId': service.id!,
+                        'isOficial': true,
+                      },
+                    );
+                  },
+                  child: const Text('Aceptar'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    });
   }
 }

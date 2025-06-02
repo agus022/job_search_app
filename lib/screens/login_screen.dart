@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:job_search_oficial/core/constants/colors.dart';
@@ -78,12 +79,28 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    userCubit.login('21030761@itcelaya.edu.mx', 'panquecito');
+                  onPressed: () async {
+                    await userCubit.login(
+                        '21030761@itcelaya.edu.mx', 'panquecito');
                     if (userCubit.state.status == UserStatus.logged) {
-                      Navigator.pushNamed(context, '/home');
+                      final user = userCubit.state.user!;
+                      final userId = user.id;
+                      final isOficial = user.type == 'official';
+
+                      if (userId != null) {
+                        checkActiveService(context, userId, isOficial);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('User ID is null')),
+                        );
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content:
+                                Text(userCubit.state.error ?? 'Login fallido')),
+                      );
                     }
-                    // TODO: Mostrar logged failed
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -154,5 +171,21 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  void checkActiveService(
+      BuildContext context, String userId, bool isOficial) async {
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final serviceId = userDoc.data()?['activeService'];
+
+    if (serviceId != null) {
+      Navigator.pushReplacementNamed(context, '/liveTracking', arguments: {
+        'serviceId': serviceId,
+        'isOficial': isOficial,
+      });
+    } else {
+      Navigator.pushReplacementNamed(context, '/home');
+    }
   }
 }
