@@ -1,22 +1,10 @@
-class Category {
-  final String id;
-  final String name;
-
-  Category({required this.id, required this.name});
-
-  factory Category.fromMap(Map<String, dynamic> map, String docId) {
-    return Category(
-      id: docId,
-      name: map['name'] as String,
-    );
-  }
-}
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Job {
   final String id;
   final String name;
   final String categoryName;
-  final String categoryNameRef;
+  final DocumentReference categoryNameRef;
 
   Job({
     required this.id,
@@ -28,17 +16,12 @@ class Job {
   factory Job.fromMap(Map<String, dynamic> map, {required String docId}) {
     return Job(
       id: docId,
-      name: map['name'] as String,
-      categoryName: map['categoryName'] as String,
-      categoryNameRef: map['categoryNameRef'] as String,
+      name: map['name']?.toString() ?? 'Sin nombre',
+      categoryName: map['categoryName']?.toString() ?? '',
+      categoryNameRef: map['categoryNameRef'] is DocumentReference
+          ? map['categoryNameRef'] as DocumentReference
+          : FirebaseFirestore.instance
+              .doc(map['categoryNameRef']?.toString() ?? ''),
     );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'categoryName': categoryName,
-      'categoryNameRef': categoryNameRef,
-    };
   }
 }

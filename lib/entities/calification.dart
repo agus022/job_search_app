@@ -21,15 +21,14 @@ class Calification {
   /// Crea una instancia de Calification a partir de un Map de Firestore.
   factory Calification.fromMap(Map<String, dynamic> map, {String? docId}) {
     return Calification(
-      id: docId ?? map['id'] as String?,
-      // serviceRef: map['serviceRef'] as String,
-      clientRef: map['clientRef'] as String,
+      id: docId ?? map['id']?.toString(),
+      clientRef: map['clientRef']?.toString() ?? '',
       punctuation: Punctuation.values.firstWhere(
-        (e) => e.name == (map['punctuation'] as String),
+        (e) => e.name == map['punctuation']?.toString(),
         orElse: () => Punctuation.zero,
       ),
-      comment: map['comment'] as String,
-      date: (map['date'] as Timestamp).toDate(),
+      comment: map['comment']?.toString() ?? '',
+      date: (map['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 

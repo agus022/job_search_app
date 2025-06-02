@@ -52,7 +52,7 @@ class UserCubit extends Cubit<UserState> {
 
   UserCubit() : super(const UserState());
 
-  /// Client User Login 
+  /// Client User Login
   Future<void> login(String email, String password) async {
     emit(state.copyWith(loading: true, error: null, message: null));
     try {
@@ -233,7 +233,7 @@ class UserCubit extends Cubit<UserState> {
       for (final batch in batches) {
         final snap = await _firestore
             .collection(usersCollection)
-            .where('type', isEqualTo: UserType.oficial.name)
+            .where('type', isEqualTo: UserType.official.name)
             .where('oficialProfile.jobsIds', arrayContainsAny: batch)
             .get();
         result.addAll(
@@ -267,7 +267,7 @@ class UserCubit extends Cubit<UserState> {
     try {
       final snap = await _firestore
           .collection(usersCollection)
-          .where('type', isEqualTo: UserType.oficial.name)
+          .where('type', isEqualTo: UserType.official.name)
           .get();
       final all =
           snap.docs.map((d) => UserEntity.fromMap(d.data(), d.id)).toList();

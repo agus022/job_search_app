@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:job_search_oficial/entities/entities.dart';
 
-enum UserType { client, oficial }
+enum UserType { client, official }
 
 enum PlanType { free, plus }
 
@@ -34,18 +34,19 @@ class UserEntity {
 
   factory UserEntity.fromMap(Map<String, dynamic> map, String? docId) {
     return UserEntity(
-      id: docId ?? map['id'] as String?,
-      name: map['name'] as String,
-      lastName: map['lastName'] as String,
-      email: map['email'] as String,
-      phone: map['phone'] as String,
+      id: docId ?? map['id']?.toString() ?? '',
+      name: map['name']?.toString() ?? 'Sin nombre',
+      lastName: map['lastName']?.toString() ?? '',
+      email: map['email']?.toString() ?? '',
+      phone: map['phone']?.toString() ?? '',
       type: UserType.values.firstWhere(
-        (e) => e.name == map['type'] as String,
+        (e) => e.name == map['type']?.toString(),
         orElse: () => UserType.client,
       ),
-      creationDate: (map['creationDate'] as Timestamp).toDate(),
-      profilePicture: map['profilePicture'] as String,
-      location: map['location'] as GeoPoint?,
+      creationDate:
+          (map['creationDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      profilePicture: map['profilePicture']?.toString() ?? '',
+      location: _parseGeoPoint(map['location']),
       clientProfile: map['clientProfile'] != null
           ? ClientProfile.fromMap(map['clientProfile'] as Map<String, dynamic>)
           : null,
@@ -54,6 +55,20 @@ class UserEntity {
               map['oficialProfile'] as Map<String, dynamic>)
           : null,
     );
+  }
+
+// Función auxiliar para manejar distintos formatos de ubicación
+  static GeoPoint _parseGeoPoint(dynamic value) {
+    if (value is GeoPoint) {
+      return value;
+    } else if (value is Map<String, dynamic>) {
+      return GeoPoint(
+        (value['latitude'] ?? 0.0) as double,
+        (value['longitude'] ?? 0.0) as double,
+      );
+    } else {
+      return const GeoPoint(0.0, 0.0);
+    }
   }
 
   Map<String, dynamic> toMap() {
@@ -85,9 +100,9 @@ class ClientProfile {
 
   factory ClientProfile.fromMap(Map<String, dynamic> map) {
     return ClientProfile(
-      address: map['address'] as String,
+      address: map['address']?.toString() ?? '',
       plan: PlanType.values.firstWhere(
-        (e) => e.name == (map['plan'] as String? ?? PlanType.free.name),
+        (e) => e.name == (map['plan']?.toString() ?? PlanType.free.name),
         orElse: () => PlanType.free,
       ),
     );
@@ -119,7 +134,6 @@ class OficialProfile {
   });
 
   factory OficialProfile.fromMap(Map<String, dynamic> map) {
-    // Parsear calificaciones si existen
     List<Calification>? parsedCalifications;
     if (map['califications'] != null) {
       parsedCalifications = (map['califications'] as List<dynamic>)
@@ -128,15 +142,17 @@ class OficialProfile {
     }
 
     return OficialProfile(
-      description: map['description'] as String,
-      location: map['location'] as String,
-      certifications: map['certifications'] as String,
-      jobsIds: map['jobsIds'] != null
-          ? List<String>.from(map['jobsIds'] as List<dynamic>)
-          : <String>[],
-      jobNames: map['jobNames'] != null
-          ? List<String>.from(map['jobNames'] as List<dynamic>)
-          : <String>[],
+      description: map['description']?.toString() ?? '',
+      location: map['location']?.toString() ?? '',
+      certifications: map['certifications']?.toString() ?? '',
+      jobsIds: (map['jobsIds'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      jobNames: (map['jobNames'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
       califications: parsedCalifications,
     );
   }

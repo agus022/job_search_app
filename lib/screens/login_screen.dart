@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:job_search_oficial/core/constants/colors.dart';
+import 'package:job_search_oficial/core/constants/text_styles.dart';
+import 'package:job_search_oficial/widgets/button.dart';
+import 'package:job_search_oficial/widgets/custom_text_field.dart';
 
 import '../cubit/user_cubit.dart';
 
@@ -15,73 +18,56 @@ class _LoginScreenState extends State<LoginScreen> {
   bool rememberMe = false;
   bool showPassword = false;
 
+  final nameController = TextEditingController();
+  final passwordController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     final userCubit = context.read<UserCubit>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: Theme.of(context).cardColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Sign In",
-                  style: GoogleFonts.poppins(
-                      fontSize: 28, fontWeight: FontWeight.bold)),
+              Text("Sign In", style: AppTextStyles.headline),
               const SizedBox(height: 6),
               Text("Welcome back you’ve been missed",
-                  style: GoogleFonts.poppins(
-                      fontSize: 14, color: Colors.grey[600])),
+                  style: AppTextStyles.body),
               const SizedBox(height: 32),
 
               // Email
-              Text("Email ID",
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+              Text("Email", style: AppTextStyles.formLabel),
               const SizedBox(height: 8),
-              TextField(
-                decoration: InputDecoration(
-                  hintText: "Enter Email ID",
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
+              CustomTextField(
+                hintText: "Enter Email",
+                controller: nameController,
               ),
+
               const SizedBox(height: 16),
 
               // Password
-              Text("Password",
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+              Text("Password", style: AppTextStyles.formLabel),
               const SizedBox(height: 8),
-              TextField(
-                obscureText: !showPassword,
-                decoration: InputDecoration(
-                  hintText: "Enter Password",
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                        showPassword ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () =>
-                        setState(() => showPassword = !showPassword),
-                  ),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
+              CustomTextField(
+                hintText: "Enter your password",
+                controller: passwordController,
+                isPassword: true,
               ),
               const SizedBox(height: 12),
 
               // Remember Me + Forgot
               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Checkbox(
-                    value: rememberMe,
-                    activeColor: Colors.deepPurple,
-                    onChanged: (value) => setState(() => rememberMe = value!),
-                  ),
-                  const Text("Remember Me"),
-                  const Spacer(),
                   TextButton(
                     onPressed: () {},
-                    child: const Text("Forgot Password?"),
+                    child: Text("Forgot Password?",
+                        style: AppTextStyles.hightLightText
+                            .copyWith(decoration: TextDecoration.underline)),
                   )
                 ],
               ),
@@ -100,13 +86,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     // TODO: Mostrar logged failed
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                    backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text("Sign In",
-                      style: TextStyle(color: Colors.white, fontSize: 16)),
+                  child: Text("Sign In", style: AppTextStyles.buttonLogin),
                 ),
               ),
               const SizedBox(height: 24),
@@ -114,12 +99,20 @@ class _LoginScreenState extends State<LoginScreen> {
               // Divider with "Or with"
               Row(
                 children: [
-                  const Expanded(child: Divider()),
+                  const Expanded(
+                      child: Divider(
+                    color: AppColors.borderButton,
+                    thickness: 1.5,
+                  )),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text("Or with", style: GoogleFonts.poppins()),
+                    child: Text("Or with", style: AppTextStyles.body),
                   ),
-                  const Expanded(child: Divider()),
+                  const Expanded(
+                      child: Divider(
+                    color: AppColors.borderButton,
+                    thickness: 1.5,
+                  )),
                 ],
               ),
               const SizedBox(height: 20),
@@ -128,9 +121,13 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _socialButton(icon: Icons.facebook, label: "Facebook"),
-                  const SizedBox(width: 12),
-                  _socialButton(icon: Icons.g_mobiledata, label: "Google"),
+                  SocialButton(
+                    label: "Continue with Google",
+                    iconPath: 'assets/icons/google_logo.png',
+                    onPressed: () {
+                      // Acción con Google
+                    },
+                  ),
                 ],
               ),
 
@@ -140,34 +137,21 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Don't have an account?", style: GoogleFonts.poppins()),
+                  Text("Don't have an account?", style: AppTextStyles.body),
                   TextButton(
                     onPressed: () {
                       Navigator.pushNamed(context, '/register');
-                    }, // Puedes navegar al RegisterScreen aquí
-                    child: const Text("Sign Up"),
+                    },
+                    child: Text("Sign Up",
+                        style: AppTextStyles.hightLightText.copyWith(
+                          decoration: TextDecoration.underline,
+                        )),
                   ),
                 ],
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _socialButton({required IconData icon, required String label}) {
-    return ElevatedButton.icon(
-      onPressed: () {
-        Navigator.pushNamed(context, '/home');
-      }, // Sin funcionalidad por ahora
-      icon: Icon(icon, color: Colors.black),
-      label: Text(label, style: const TextStyle(color: Colors.black)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        elevation: 2,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
