@@ -82,7 +82,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
-
                     final email = nameController.text.trim();
                     final password = passwordController.text.trim();
 
@@ -93,7 +92,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       return;
                     }
                     await userCubit.login(email, password);
-
 
                     if (userCubit.state.status == UserStatus.logged) {
                       final user = userCubit.state.user!;

@@ -23,17 +23,19 @@ class _PartnerScreenState extends State<PartnerScreen> {
     context.read<CategoryCubit>().getCategories();
   }
 
-  void _submitForm() async {
+  Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate() || selectedJobs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Completa todos los campos')),
+        const SnackBar(
+          content: Text(
+              'Completa todos los campos y selecciona al menos un trabajo.'),
+        ),
       );
       return;
     }
 
     final userCubit = context.read<UserCubit>();
     final user = userCubit.state.user;
-
     if (user == null) return;
 
     final jobRefs = selectedJobs.map((id) {
@@ -42,9 +44,9 @@ class _PartnerScreenState extends State<PartnerScreen> {
 
     final oficialProfile = {
       'description': _descController.text.trim(),
-      'location': 'Celaya, Gto.', // Puedes hacerlo editable
+      'location': 'Celaya, Gto.',
       'jobIds': jobRefs,
-      'califications': [], // Estructura inicial vacía
+      'califications': [],
     };
 
     await FirebaseFirestore.instance.collection('users').doc(user.id).update({
@@ -65,16 +67,16 @@ class _PartnerScreenState extends State<PartnerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 1,
+        title: const Text('Convertirse en socio',
+            style: TextStyle(color: Colors.black)),
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          'Convertirse en socio',
-          style: TextStyle(color: Colors.black),
-        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -83,29 +85,40 @@ class _PartnerScreenState extends State<PartnerScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Descripción de tu experiencia',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              Text('📄 Describe tu experiencia',
+                  style: textTheme.titleMedium!
+                      .copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _descController,
-                maxLines: 3,
-                decoration: const InputDecoration(
+                maxLines: 4,
+                decoration: InputDecoration(
                   hintText: 'Ej. Sé hacer mezclas, plomería, etc.',
-                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Campo requerido' : null,
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'Campo requerido'
+                    : null,
               ),
               const SizedBox(height: 24),
-              const Text('Selecciona una categoría'),
+              Text('📂 Selecciona una categoría',
+                  style: textTheme.titleMedium!
+                      .copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               BlocBuilder<CategoryCubit, CategoryState>(
                 builder: (context, state) {
                   final categories = state.categories ?? [];
                   return DropdownButtonFormField<String>(
                     value: selectedCategoryId,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
                     items: categories.map((cat) {
                       return DropdownMenuItem(
                         value: cat.id,
@@ -128,18 +141,28 @@ class _PartnerScreenState extends State<PartnerScreen> {
                 },
               ),
               const SizedBox(height: 24),
-              const Text('Selecciona los trabajos que sabes hacer'),
+              Text('🛠 Selecciona tus habilidades',
+                  style: textTheme.titleMedium!
+                      .copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
               BlocBuilder<JobCubit, JobState>(
                 builder: (context, state) {
                   final jobs = state.jobs ?? [];
-                  return Column(
+                  if (jobs.isEmpty) {
+                    return const Text(
+                        'Selecciona una categoría para ver los trabajos.');
+                  }
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
                     children: jobs.map((job) {
-                      return CheckboxListTile(
-                        title: Text(job.name),
-                        value: selectedJobs.contains(job.id),
-                        onChanged: (selected) {
+                      final isSelected = selectedJobs.contains(job.id);
+                      return FilterChip(
+                        label: Text(job.name),
+                        selected: isSelected,
+                        onSelected: (selected) {
                           setState(() {
-                            if (selected!) {
+                            if (selected) {
                               selectedJobs.add(job.id);
                               selectedJobNames.add(job.name);
                             } else {
@@ -148,6 +171,8 @@ class _PartnerScreenState extends State<PartnerScreen> {
                             }
                           });
                         },
+                        selectedColor: Colors.green.shade200,
+                        backgroundColor: Colors.grey.shade200,
                       );
                     }).toList(),
                   );
@@ -156,18 +181,17 @@ class _PartnerScreenState extends State<PartnerScreen> {
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: _submitForm,
-                icon: const Icon(Icons.check_circle),
+                icon: const Icon(Icons.check_circle_outline),
                 label: const Text('Convertirse en socio'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: Theme.of(context).primaryColor,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+                      borderRadius: BorderRadius.circular(14)),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
             ],
           ),
         ),

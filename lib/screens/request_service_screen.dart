@@ -29,41 +29,29 @@ class RequestServiceScreen extends StatelessWidget {
 
     Future<void> confirmService() async {
       try {
-        if (service.id == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('ID del servicio no disponible.')),
-          );
-          return;
-        }
         final validationCode =
             (1000 + (DateTime.now().millisecondsSinceEpoch % 9000)).toString();
 
-        // 1. Crear el servicio en Firestore
         await FirebaseFirestore.instance
             .collection('services')
             .doc(service.id)
-            .set(service.toMap()..['validationCode'] = validationCode);
+            .set({
+          ...service.toMap(),
+          'validationCode': validationCode,
+          'clientConfirmed': true,
+        });
 
-        // 2. Confirmar que el cliente lo ha aceptado
-        await FirebaseFirestore.instance
-            .collection('services')
-            .doc(service.id)
-            .update({'clientConfirmed': true});
-
-        //  3. Asignar activeService al cliente
         await FirebaseFirestore.instance
             .collection('users')
             .doc(client.id)
-            .update({'activeService': service.id});
+            .update({
+          'activeService': service.id,
+        });
 
-        // 4. Ir a pantalla de espera
-        Navigator.pushReplacementNamed(
-          context,
-          '/waiting_confirmation',
-          arguments: {
-            'serviceId': service.id!,
-          },
-        );
+        Navigator.pushReplacementNamed(context, '/waiting_confirmation',
+            arguments: {
+              'serviceId': service.id!,
+            });
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al confirmar el servicio: $e')),
@@ -72,30 +60,47 @@ class RequestServiceScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Confirmar Servicio')),
+      appBar: AppBar(title: const Text('Confirmación de Servicio')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Oficial: ${oficial.name} ${oficial.lastName}'),
-            Text(
-                'Descripción: ${oficial.oficialProfile?.description ?? 'N/A'}'),
-            const SizedBox(height: 24),
+            Text('👤 Oficial: ${oficial.name} ${oficial.lastName}',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text('📍 Dirección: ${service.address}'),
+            const SizedBox(height: 8),
+            Text('📝 Descripción: ${service.description}'),
+            const SizedBox(height: 32),
             Row(
               children: [
-                ElevatedButton.icon(
-                  onPressed: confirmService,
-                  icon: const Icon(Icons.check),
-                  label: const Text('Confirmar'),
+                Expanded(
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Confirmar'),
+                    onPressed: confirmService,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
-                OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancelar'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),

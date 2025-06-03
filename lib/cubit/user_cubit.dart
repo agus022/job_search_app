@@ -125,6 +125,30 @@ class UserCubit extends Cubit<UserState> {
     emit(state.copyWith(user: updatedUser));
   }
 
+  Future<void> fetchUser() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      emit(state.copyWith(error: 'No hay usuario autenticado'));
+      return;
+    }
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (doc.exists) {
+        final user = UserEntity.fromMap(doc.data()!, doc.id);
+        emit(state.copyWith(user: user, error: null));
+      } else {
+        emit(state.copyWith(error: 'Usuario no encontrado'));
+      }
+    } catch (e) {
+      emit(state.copyWith(error: 'Error al cargar usuario: $e'));
+    }
+  }
+
   /// Client Register User
   Future<void> registerClient({
     required String name,

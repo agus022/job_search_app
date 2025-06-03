@@ -63,9 +63,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   : null,
               child: CircleAvatar(
                 radius: 60,
+                backgroundColor: Theme.of(context).primaryColor,
                 backgroundImage: user.profilePicture.isNotEmpty
                     ? NetworkImage(user.profilePicture)
-                    : const AssetImage('assets/img/user.webp') as ImageProvider,
+                    : const AssetImage('assets/img/default_avatar3.png')
+                        as ImageProvider,
                 child: isEditing
                     ? Container(
                         decoration: BoxDecoration(
