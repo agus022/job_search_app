@@ -12,7 +12,12 @@
           "package_name": "com.example.job_search_oficial"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "933821328299-dqcuqtnpt3fs0ubjaugba4upik79218e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB_jr33-h9_oit7N1O5dnO39AngsZXSLBw"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "933821328299-dqcuqtnpt3fs0ubjaugba4upik79218e.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "933821328299-cijm12lfk5jvv0osa99vmhhotfr01isk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.jobSearchOficial"
+              }
+            }
+          ]
         }
       }
     }
