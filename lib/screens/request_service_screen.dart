@@ -35,18 +35,28 @@ class RequestServiceScreen extends StatelessWidget {
           );
           return;
         }
+        final validationCode =
+            (1000 + (DateTime.now().millisecondsSinceEpoch % 9000)).toString();
 
+        // 1. Crear el servicio en Firestore
         await FirebaseFirestore.instance
             .collection('services')
             .doc(service.id)
-            .set(service.toMap());
+            .set(service.toMap()..['validationCode'] = validationCode);
 
+        // 2. Confirmar que el cliente lo ha aceptado
         await FirebaseFirestore.instance
             .collection('services')
             .doc(service.id)
             .update({'clientConfirmed': true});
 
-        // Ir a pantalla de espera
+        //  3. Asignar activeService al cliente
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(client.id)
+            .update({'activeService': service.id});
+
+        // 4. Ir a pantalla de espera
         Navigator.pushReplacementNamed(
           context,
           '/waiting_confirmation',

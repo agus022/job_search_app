@@ -84,10 +84,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (userCubit.state.status == UserStatus.logged) {
                       final user = userCubit.state.user!;
                       final userId = user.id;
-                      final isOficial = user.type == 'official';
 
                       if (userId != null) {
-                        checkActiveService(context, userId, isOficial);
+                        checkActiveService(
+                            context, userId, user.type == 'official');
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('User ID is null')),
@@ -174,24 +174,49 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> checkActiveService(
       BuildContext context, String userId, bool isOficial) async {
-    final query = await FirebaseFirestore.instance
-        .collection('services')
-        .where(isOficial ? 'oficialRef' : 'clientRef', isEqualTo: userId)
-        .where('state', isEqualTo: 'accepted') // o los que quieras permitir
-        .limit(1)
-        .get();
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
 
-    if (query.docs.isNotEmpty) {
-      final serviceId = query.docs.first.id;
+    final serviceId = userDoc.data()?['activeService'];
+    final role = userDoc.data()?['role'];
 
-      Navigator.pushReplacementNamed(
-        context,
-        '/live_tracking',
-        arguments: {
-          'serviceId': serviceId,
-          'isOficial': isOficial,
-        },
-      );
+    if (serviceId != null && serviceId != '') {
+      final serviceDoc = await FirebaseFirestore.instance
+          .collection('services')
+          .doc(serviceId)
+          .get();
+
+      if (serviceDoc.exists) {
+        final data = serviceDoc.data()!;
+        final state = data['state'];
+        final clientConfirmed = data['clientConfirmed'] == true;
+        final oficialConfirmed = data['oficialConfirmed'] == true;
+
+        if (state == 'accepted' && clientConfirmed && oficialConfirmed) {
+          Navigator.pushReplacementNamed(context, '/live_tracking', arguments: {
+            'serviceId': serviceId,
+            'isOficial': role == 'oficial',
+          });
+        } else if (state == 'pending' ||
+            !(clientConfirmed && oficialConfirmed)) {
+          Navigator.pushReplacementNamed(
+            context,
+            '/waiting_confirmation',
+            arguments: {
+              'serviceId': serviceId,
+            },
+          );
+        } else {
+          // si el estado es cancelado o completado
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .update({'activeService': null});
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      }
+    } else {
+      Navigator.pushReplacementNamed(context, '/home');
     }
   }
 }

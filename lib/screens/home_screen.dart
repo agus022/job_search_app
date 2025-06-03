@@ -95,11 +95,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             onTap: () =>
                                 _scaffoldKey.currentState?.openDrawer(),
                             child: CircleAvatar(
-                                radius: 24,
-                                backgroundImage: user?.profilePicture != null
-                                    ? NetworkImage(user!.profilePicture)
-                                    : const AssetImage('assets/img/user.webp')
-                                        as ImageProvider),
+                              radius: 24,
+                              backgroundImage: (user?.profilePicture != null &&
+                                      user!.profilePicture.trim().isNotEmpty)
+                                  ? NetworkImage(user.profilePicture)
+                                  : const AssetImage('assets/img/user.webp'),
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -415,9 +416,11 @@ class _HomeScreenState extends State<HomeScreen> {
           UserAccountsDrawerHeader(
             decoration: const BoxDecoration(color: Color(0xFF333331)),
             currentAccountPicture: CircleAvatar(
-              backgroundImage: user?.profilePicture != null
-                  ? NetworkImage(user!.profilePicture)
-                  : const AssetImage('assets/img/user.webp') as ImageProvider,
+              radius: 24,
+              backgroundImage: (user?.profilePicture != null &&
+                      user!.profilePicture.trim().isNotEmpty)
+                  ? NetworkImage(user.profilePicture)
+                  : const AssetImage('assets/img/user.webp'),
             ),
             accountName: Text(
               '${user?.name ?? ''} ${user?.lastName ?? ''} ${user?.type == UserType.official ? ' (Oficial)' : ''}',
@@ -468,6 +471,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void listenForIncomingRequests(String oficialId, BuildContext context) {
+    final shownRequests = <String>{};
+    bool isDialogShowing = false;
+
     FirebaseFirestore.instance
         .collection('services')
         .where('oficialRef', isEqualTo: oficialId)
@@ -478,8 +484,15 @@ class _HomeScreenState extends State<HomeScreen> {
         final data = doc.data();
         final service = Service.fromMap(data, docId: doc.id);
 
-        // Mostrar solo si aún está pendiente
-        if (service.state == ServiceStatus.pendent) {
+        // Evitar mostrar duplicados o si ya hay un diálogo activo
+        if (service.state == ServiceStatus.pendent &&
+            !shownRequests.contains(service.id) &&
+            !isDialogShowing) {
+          if (service.id != null) {
+            shownRequests.add(service.id!);
+          }
+          isDialogShowing = true;
+
           showDialog(
             context: context,
             barrierDismissible: false,
@@ -488,41 +501,54 @@ class _HomeScreenState extends State<HomeScreen> {
               content: Text('¿Aceptar servicio en: ${service.address}?'),
               actions: [
                 TextButton(
-                  onPressed: () {
-                    FirebaseFirestore.instance
+                  onPressed: () async {
+                    await FirebaseFirestore.instance
                         .collection('services')
                         .doc(service.id)
                         .update({
                       'state': ServiceStatus.cancelled.name,
                     });
                     Navigator.of(context).pop();
+                    isDialogShowing = false;
                   },
                   child: const Text('Rechazar'),
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    FirebaseFirestore.instance
+                  onPressed: () async {
+                    await FirebaseFirestore.instance
                         .collection('services')
                         .doc(service.id)
                         .update({
                       'state': ServiceStatus.accepted.name,
-                      'oficialConfirmed': true
+                      'oficialConfirmed': true,
                     });
+
+                    await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(oficialId)
+                        .update({'activeService': service.id});
+
                     Navigator.of(context).pop();
-                    Navigator.pushNamed(
-                      context,
-                      '/live_tracking',
-                      arguments: {
-                        'serviceId': service.id!,
-                        'isOficial': true,
-                      },
-                    );
+                    isDialogShowing = false;
+
+                    if (context.mounted) {
+                      Navigator.pushNamed(
+                        context,
+                        '/live_tracking',
+                        arguments: {
+                          'serviceId': service.id!,
+                          'isOficial': true,
+                        },
+                      );
+                    }
                   },
                   child: const Text('Aceptar'),
                 ),
               ],
             ),
-          );
+          ).then((_) {
+            isDialogShowing = false;
+          });
         }
       }
     });
