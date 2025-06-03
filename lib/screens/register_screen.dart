@@ -11,7 +11,6 @@ import '../cubit/cubits.dart';
 import 'login_screen.dart';
 import 'package:http/http.dart' as http;
 
-
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -30,7 +29,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   final addressController = TextEditingController();
-  
 
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
@@ -47,15 +45,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<String> uploadImageToCloudinary(File imageFile, String userId) async {
-    const cloudName = 'dejfghad3'; 
-    const uploadPreset = 'oficiales_job'; 
+    const cloudName = 'dejfghad3';
+    const uploadPreset = 'oficiales_job';
 
-    final uri = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+    final uri =
+        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
     final request = http.MultipartRequest('POST', uri);
 
     request.fields['upload_preset'] = uploadPreset;
     request.fields['public_id'] = 'profile_pictures/$userId';
-    request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+    request.files
+        .add(await http.MultipartFile.fromPath('file', imageFile.path));
 
     final response = await request.send();
 
@@ -92,12 +92,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     CircleAvatar(
                       radius: 50,
+                      backgroundColor: Theme.of(context).primaryColor,
                       backgroundImage: _selectedImage != null
                           ? FileImage(_selectedImage!)
                           : const AssetImage('assets/img/default_avatar3.png')
                               as ImageProvider,
                     ),
-                    
                     Positioned(
                       bottom: 1,
                       right: 2,
@@ -113,9 +113,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               blurRadius: 4,
                               offset: Offset(0, 2),
                             ),
-                            
                           ],
-                          
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.camera_alt,
@@ -202,17 +200,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Text("Phone", style: AppTextStyles.formLabel),
               const SizedBox(height: 8),
               CustomTextField(
-                hintText: "Enter your phone number",
-                controller: phoneController,
-                keyboardType: TextInputType.number
-              ),
+                  hintText: "Enter your phone number",
+                  controller: phoneController,
+                  keyboardType: TextInputType.number),
               const SizedBox(height: 16),
 
               // Address
               Text("Address", style: AppTextStyles.formLabel),
               const SizedBox(height: 8),
               CustomTextField(
-                hintText: "Enter your address (#, street, city, state, zip code)", 
+                hintText:
+                    "Enter your address (#, street, city, state, zip code)",
                 controller: addressController,
               ),
               const SizedBox(height: 4),
@@ -259,14 +257,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
-                    String profilePictureUrl = 'https://asset.cloudinary.com/dejfghad3/526956abdff0d7f426fa707ee082564b';
-                    //obtener valores de los campos de texto sin espacios en blanco .trim es lo q hace  
+                    String profilePictureUrl =
+                        'https://asset.cloudinary.com/dejfghad3/526956abdff0d7f426fa707ee082564b';
+                    //obtener valores de los campos de texto sin espacios en blanco .trim es lo q hace
                     final name = nameController.text.trim();
                     final lastName = lastNameController.text.trim();
                     final phone = phoneController.text.trim();
                     final email = emailController.text.trim();
                     final password = passwordController.text.trim();
-                    final confirmPassword = confirmPasswordController.text.trim();
+                    final confirmPassword =
+                        confirmPasswordController.text.trim();
                     final address = addressController.text.trim();
 
                     final Map<String, String> fieldLabels = {
@@ -288,22 +288,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // Si falta algún campo, muestra mensaje específico
                     if (missingField.key.isNotEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('El campo "${missingField.key}" es obligatorio.')),
+                        SnackBar(
+                            content: Text(
+                                'El campo "${missingField.key}" es obligatorio.')),
                       );
                       return;
                     }
 
                     // validar campos no sean vacios
-                    final values = [name, lastName, phone, email, password, confirmPassword, address];
+                    final values = [
+                      name,
+                      lastName,
+                      phone,
+                      email,
+                      password,
+                      confirmPassword,
+                      address
+                    ];
                     if (values.any((e) => e.isEmpty)) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Todos los campos son obligatorios')),);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Todos los campos son obligatorios')),
+                      );
                       return;
                     }
                     //validar coincidencia con contraseñas
                     if (password != confirmPassword) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Las contraseñas no coinciden')),
+                        const SnackBar(
+                            content: Text('Las contraseñas no coinciden')),
                       );
                       return;
                     }
@@ -311,10 +324,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (_selectedImage != null) {
                       final userId = FirebaseAuth.instance.currentUser?.uid;
                       if (userId != null) {
-                        profilePictureUrl = await uploadImageToCloudinary(_selectedImage!, userId);
+                        profilePictureUrl = await uploadImageToCloudinary(
+                            _selectedImage!, userId);
                       }
                     }
-
 
                     userCubit.registerClient(
                       name: name,
@@ -326,19 +339,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       address: address,
                     );
 
-                      if (userCubit.state.status == UserStatus.uncofirmmed) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Registro exitoso. Revisa tu correo.')),
-                        );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(userCubit.state.error ?? 'Error al registrarse')),
-                        );
-                      }
+                    if (userCubit.state.status == UserStatus.uncofirmmed) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content:
+                                Text('Registro exitoso. Revisa tu correo.')),
+                      );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text(userCubit.state.error ??
+                                'Error al registrarse')),
+                      );
+                    }
 
                     print('Error: ${userCubit.state.error}');
                     print('Message: ${userCubit.state.message}');
