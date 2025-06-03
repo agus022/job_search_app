@@ -307,16 +307,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       );
                       return;
                     }
-
+                    
                     if (_selectedImage != null) {
                       final userId = FirebaseAuth.instance.currentUser?.uid;
                       if (userId != null) {
-                        profilePictureUrl = await uploadImageToCloudinary(_selectedImage!, userId);
+                        try {
+                          profilePictureUrl = await uploadImageToCloudinary(_selectedImage!, userId);
+                        } catch (e) {
+                          print('Error al subir la imagen: $e');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('No se pudo subir la imagen de perfil.')),
+                          );
+                          return;
+                        }
+                      } else {
+                        print('El userId es nulo, no se puede subir la imagen');
                       }
                     }
-
-
-                    userCubit.registerClient(
+                    await userCubit.registerClient(
                       name: name,
                       lastName: lastName,
                       email: email,

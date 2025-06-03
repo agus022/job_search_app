@@ -5,6 +5,7 @@ import 'package:job_search_oficial/cubit/category_cubit.dart';
 import 'package:job_search_oficial/cubit/job_cubit.dart';
 import 'package:job_search_oficial/entities/user.dart';
 import 'package:job_search_oficial/screens/edit_partner_screen.dart';
+import 'package:job_search_oficial/screens/forgot_password_screen.dart';
 import 'package:job_search_oficial/screens/home_screen.dart';
 import 'package:job_search_oficial/screens/job_detail_screen.dart';
 import 'package:job_search_oficial/screens/live_tracking_screen.dart';
@@ -30,11 +31,13 @@ class AppRoutes {
   static const String splash = '/splash';
   static const String editpartner = '/edit_partner_profile';
   static const String waitingforconfirmation = '/waiting_confirmation';
+  static const String forgotpassword = '/forgot_password';
 
   static Map<String, WidgetBuilder> get routes => {
         login: (context) => const LoginScreen(),
         splash: (context) => const SplashRouterScreen(),
         register: (context) => const RegisterScreen(),
+        forgotpassword: (context) => const ForgotPasswordScreen(),
         home: (context) => MultiBlocProvider(
               providers: [
                 BlocProvider(create: (_) => CategoryCubit()),

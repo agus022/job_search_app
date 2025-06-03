@@ -65,7 +65,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/forgot_password');
+                    },
                     child: Text("Forgot Password?",
                         style: AppTextStyles.hightLightText
                             .copyWith(decoration: TextDecoration.underline)),
