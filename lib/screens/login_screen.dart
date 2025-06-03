@@ -82,6 +82,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () async {
                     await userCubit.login(
                         '21030761@itcelaya.edu.mx', 'panquecito');
+
+                    await userCubit.login('21030047@itcelaya.edu.mx', '123456');
+
                     if (userCubit.state.status == UserStatus.logged) {
                       final user = userCubit.state.user!;
                       final userId = user.id;
