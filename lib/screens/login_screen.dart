@@ -80,10 +80,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
-                    await userCubit.login(
-                        '21030761@itcelaya.edu.mx', 'panquecito');
 
-                    await userCubit.login('21030047@itcelaya.edu.mx', '123456');
+                    final email = nameController.text.trim();
+                    final password = passwordController.text.trim();
+
+                    if (email.isEmpty || password.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Por favor, completa todos los campos')),
+                      );
+                      return;
+                    }
+                    await userCubit.login(email, password);
+
 
                     if (userCubit.state.status == UserStatus.logged) {
                       final user = userCubit.state.user!;
